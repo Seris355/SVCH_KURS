@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.log
+express-app/
+.env
+.env.local
+build/
+dist/
+*.cache
+package-lock.json

@@ -1,0 +1,139 @@
+.participants-page {
+  padding: 20px;
+  width: 100%;
+  margin: 0 auto;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+
+.participants-page {
+  max-width: var(--max-width-content);
+}
+
+main.page-container {
+  max-width: var(--max-width-content) !important;
+  width: 100% !important;
+  padding: 0;
+}
+
+.participants-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.participants-header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.error-message {
+  background-color: rgba(199, 6, 6, 0.2);
+  color: var(--color-text-primary);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  border: 1px solid var(--color-accent-primary);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-bg-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 20px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: var(--color-text-primary);
+}
+
+.password-form {
+  padding: 20px;
+}
+
+.password-form p {
+  margin: 5px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.form-hint {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .participants-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .btn-primary {
+    width: 100%;
+  }
+
+  .modal-content {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .password-form {
+    padding: 15px;
+  }
+}
+
