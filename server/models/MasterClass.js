@@ -18,18 +18,6 @@ const customValidators = {
       throw new Error('Цена может содержать максимум 2 знака после запятой');
     }
   },
-
-  isValidParticipantIds(value) {
-    if (!Array.isArray(value)) {
-      throw new Error('participantIds должен быть массивом');
-    }
-
-    for (const id of value) {
-      if (!Number.isInteger(id) || id <= 0) {
-        throw new Error('Все ID участников должны быть положительными целыми числами');
-      }
-    }
-  }
 };
 
 const MasterClass = sequelize.define('MasterClass', {
@@ -102,14 +90,6 @@ const MasterClass = sequelize.define('MasterClass', {
       notNull: {
         msg: 'ID инструктора обязателен',
       },
-    },
-  },
-  participantIds: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: true,
-    defaultValue: [],
-    validate: {
-      isValidParticipantIds: customValidators.isValidParticipantIds,
     },
   },
 }, {

@@ -1,0 +1,24 @@
+Изменения схемы БД (только модели Sequelize, без правок контроллеров/сида/фронта)
+Дата: 2026-04-06
+
+Проблема 3НФ:
+- В таблице masterclasses было поле participantIds типа INTEGER[] (PostgreSQL ARRAY). Хранение списка связей в одной ячейке — нарушение 1НФ и нормализации связи «многие-ко-многим».
+
+Что сделано:
+1) Добавлен файл models/MasterClassParticipant.js и таблица master_class_participants:
+   - id (PK, serial)
+   - masterClassId -> masterclasses.id (ON DELETE CASCADE)
+   - participantId -> participants.id (ON DELETE CASCADE)
+   - уникальный индекс (masterClassId, participantId), чтобы одна пара мастер-класс + участник не дублировалась
+
+2) В models/MasterClass.js удалены поле participantIds и валидатор isValidParticipantIds (массив ID в строке мастер-класса больше не хранится).
+
+3) В models/index.js:
+   - подключена модель MasterClassParticipant;
+   - связь многие-ко-многим: MasterClass <-> Participant через MasterClassParticipant;
+   - алиасы: у MasterClass — as: 'participants', у Participant — as: 'masterClasses';
+   - модель экспортируется как MasterClassParticipant.
+
+Текущее число таблиц в проекте: 7 (instructors, participants, masterclasses, master_class_participants, participant_passwords, refresh_tokens, recovery_tokens). Для методички (не менее 8) планируется добавить таблицы отдельным шагом.
+
+Важно: код в seedDB.js, masterClassController.js, participantController.js, MasterClassForm.js по-прежнему опирается на participantIds — после sync/миграции эти места нужно перевести на MasterClassParticipant / include ассоциаций, иначе будут ошибки времени выполнения.
