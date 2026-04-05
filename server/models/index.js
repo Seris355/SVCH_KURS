@@ -6,6 +6,7 @@ const MasterClassParticipant = require('./MasterClassParticipant');
 const ParticipantPassword = require('./ParticipantPassword');
 const RefreshToken = require('./RefreshToken');
 const RecoveryToken = require('./RecoveryToken');
+const Review = require('./Review');
 
 
 
@@ -53,6 +54,28 @@ Participant.hasMany(RecoveryToken, {
   onDelete: 'CASCADE',
 });
 
+Participant.hasMany(Review, {
+  foreignKey: 'participantId',
+  as: 'reviews',
+  onDelete: 'CASCADE',
+});
+
+MasterClass.hasMany(Review, {
+  foreignKey: 'masterClassId',
+  as: 'reviews',
+  onDelete: 'CASCADE',
+});
+
+Review.belongsTo(Participant, {
+  foreignKey: 'participantId',
+  as: 'participant',
+});
+
+Review.belongsTo(MasterClass, {
+  foreignKey: 'masterClassId',
+  as: 'masterClass',
+});
+
 module.exports = {
   sequelize,
   Instructor,
@@ -62,5 +85,6 @@ module.exports = {
   ParticipantPassword,
   RefreshToken,
   RecoveryToken,
+  Review,
 };
 

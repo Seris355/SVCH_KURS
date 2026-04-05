@@ -22,3 +22,11 @@
 Текущее число таблиц в проекте: 7 (instructors, participants, masterclasses, master_class_participants, participant_passwords, refresh_tokens, recovery_tokens). Для методички (не менее 8) планируется добавить таблицы отдельным шагом.
 
 Важно: код в seedDB.js, masterClassController.js, participantController.js, MasterClassForm.js по-прежнему опирается на participantIds — после sync/миграции эти места нужно перевести на MasterClassParticipant / include ассоциаций, иначе будут ошибки времени выполнения.
+
+---
+
+Добавлена таблица reviews (модель Review.js):
+- participantId, masterClassId, rating (1–5), comment (TEXT, nullable), createdAt
+- уникальность (participantId, masterClassId) — один отзыв от участника на мастер-класс
+- CASCADE при удалении участника или мастер-класса
+- ассоциации: Participant.hasMany reviews, MasterClass.hasMany reviews, Review.belongsTo participant/masterClass
