@@ -1,5 +1,13 @@
 const bcrypt = require('bcrypt');
-const { sequelize, Instructor, Participant, MasterClass, ParticipantPassword } = require('../models');
+const {
+  sequelize,
+  Instructor,
+  Participant,
+  MasterClass,
+  MasterClassParticipant,
+  ParticipantPassword,
+  Review,
+} = require('../models');
 
 const instructorsData = [
   { fullName: 'Иванов Иван Иванович', specialization: 'Диетолог' },
@@ -37,6 +45,7 @@ const participantsData = [
   { fullName: 'Федоров Федор Федорович', email: 'fedorov@mail.ru', phone: '+375 (29) 110-10-10' },
 ];
 
+// participantIds используются только для создания MasterClassParticipant записей
 const masterClassesData = [
   {
     name: 'Мастер-класс по здоровому питанию 1',
@@ -44,7 +53,7 @@ const masterClassesData = [
     price: 2500.00,
     photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
     instructorId: 1,
-    participantIds: [1, 2, 3]
+    participantIds: [1, 2, 3],
   },
   {
     name: 'Мастер-класс по здоровому питанию 2',
@@ -52,7 +61,7 @@ const masterClassesData = [
     price: 3000.00,
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 2,
-    participantIds: [4, 5]
+    participantIds: [4, 5],
   },
   {
     name: 'Мастер-класс по здоровому питанию 3',
@@ -60,7 +69,7 @@ const masterClassesData = [
     price: 2800.00,
     photo: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800',
     instructorId: 3,
-    participantIds: [6, 7, 8, 9]
+    participantIds: [6, 7, 8, 9],
   },
   {
     name: 'Мастер-класс по здоровому питанию 4',
@@ -68,7 +77,7 @@ const masterClassesData = [
     price: 3500.00,
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 4,
-    participantIds: [10, 11]
+    participantIds: [10, 11],
   },
   {
     name: 'Мастер-класс по здоровому питанию 5',
@@ -76,7 +85,7 @@ const masterClassesData = [
     price: 3200.00,
     photo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
     instructorId: 5,
-    participantIds: [12, 13, 14]
+    participantIds: [12, 13, 14],
   },
   {
     name: 'Мастер-класс по здоровому питанию 6',
@@ -84,7 +93,7 @@ const masterClassesData = [
     price: 2900.00,
     photo: 'https://images.unsplash.com/photo-1505968409348-bd000797c92e?w=800',
     instructorId: 6,
-    participantIds: [15, 16]
+    participantIds: [15, 16],
   },
   {
     name: 'Мастер-класс по здоровому питанию 7',
@@ -92,7 +101,7 @@ const masterClassesData = [
     price: 3300.00,
     photo: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800',
     instructorId: 7,
-    participantIds: [17, 18, 19]
+    participantIds: [17, 18, 19],
   },
   {
     name: 'Мастер-класс по здоровому питанию 8',
@@ -100,7 +109,7 @@ const masterClassesData = [
     price: 3600.00,
     photo: 'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=800',
     instructorId: 8,
-    participantIds: [20]
+    participantIds: [20],
   },
   {
     name: 'Мастер-класс по здоровому питанию 9',
@@ -108,7 +117,7 @@ const masterClassesData = [
     price: 2700.00,
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 9,
-    participantIds: [1, 3, 5, 7]
+    participantIds: [1, 3, 5, 7],
   },
   {
     name: 'Мастер-класс по здоровому питанию 10',
@@ -116,7 +125,7 @@ const masterClassesData = [
     price: 3100.00,
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 10,
-    participantIds: [2, 4, 6, 8, 10]
+    participantIds: [2, 4, 6, 8, 10],
   },
   {
     name: 'Мастер-класс по здоровому питанию 11',
@@ -124,7 +133,7 @@ const masterClassesData = [
     price: 2800.00,
     photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
     instructorId: 1,
-    participantIds: [1, 3, 5]
+    participantIds: [1, 3, 5],
   },
   {
     name: 'Мастер-класс по здоровому питанию 12',
@@ -132,7 +141,7 @@ const masterClassesData = [
     price: 3300.00,
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 2,
-    participantIds: [7, 9]
+    participantIds: [7, 9],
   },
   {
     name: 'Мастер-класс по здоровому питанию 13',
@@ -140,7 +149,7 @@ const masterClassesData = [
     price: 3500.00,
     photo: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800',
     instructorId: 3,
-    participantIds: [11, 12, 13]
+    participantIds: [11, 12, 13],
   },
   {
     name: 'Мастер-класс по здоровому питанию 14',
@@ -148,7 +157,7 @@ const masterClassesData = [
     price: 2900.00,
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 4,
-    participantIds: [14, 15]
+    participantIds: [14, 15],
   },
   {
     name: 'Мастер-класс по здоровому питанию 15',
@@ -156,7 +165,7 @@ const masterClassesData = [
     price: 3200.00,
     photo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
     instructorId: 5,
-    participantIds: [16, 17, 18]
+    participantIds: [16, 17, 18],
   },
   {
     name: 'Мастер-класс по здоровому питанию 16',
@@ -164,7 +173,7 @@ const masterClassesData = [
     price: 3600.00,
     photo: 'https://images.unsplash.com/photo-1505968409348-bd000797c92e?w=800',
     instructorId: 6,
-    participantIds: [19, 20]
+    participantIds: [19, 20],
   },
   {
     name: 'Мастер-класс по здоровому питанию 17',
@@ -172,7 +181,7 @@ const masterClassesData = [
     price: 3400.00,
     photo: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800',
     instructorId: 7,
-    participantIds: [1, 2, 3, 4]
+    participantIds: [1, 2, 3, 4],
   },
   {
     name: 'Мастер-класс по здоровому питанию 18',
@@ -180,7 +189,7 @@ const masterClassesData = [
     price: 3100.00,
     photo: 'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=800',
     instructorId: 8,
-    participantIds: [5, 6, 7]
+    participantIds: [5, 6, 7],
   },
   {
     name: 'Мастер-класс по здоровому питанию 19',
@@ -188,7 +197,7 @@ const masterClassesData = [
     price: 2700.00,
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 9,
-    participantIds: [8, 9, 10]
+    participantIds: [8, 9, 10],
   },
   {
     name: 'Мастер-класс по здоровому питанию 20',
@@ -196,25 +205,58 @@ const masterClassesData = [
     price: 3800.00,
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 10,
-    participantIds: [11, 12, 13, 14, 15]
-  }
+    participantIds: [11, 12, 13, 14, 15],
+  },
+];
+
+// Отзывы: каждый участник оставляет отзыв только на те мастер-классы, в которых участвовал
+const reviewsData = [
+  { participantId: 1, masterClassId: 1, rating: 5, comment: 'Отличный мастер-класс, очень познавательно!' },
+  { participantId: 2, masterClassId: 1, rating: 4, comment: 'Хороший материал, но хотелось бы больше практики.' },
+  { participantId: 3, masterClassId: 1, rating: 5, comment: 'Превзошло все ожидания!' },
+  { participantId: 4, masterClassId: 2, rating: 4, comment: 'Полезная информация, рекомендую.' },
+  { participantId: 5, masterClassId: 2, rating: 3, comment: 'Неплохо, но ожидал большего.' },
+  { participantId: 6, masterClassId: 3, rating: 5, comment: 'Очень понравилось, спасибо!' },
+  { participantId: 7, masterClassId: 3, rating: 4, comment: 'Хороший преподаватель, понятное изложение.' },
+  { participantId: 8, masterClassId: 3, rating: 5, comment: 'Узнал много нового о правильном питании.' },
+  { participantId: 9, masterClassId: 3, rating: 4, comment: 'Интересно и практично.' },
+  { participantId: 10, masterClassId: 4, rating: 5, comment: 'Лучший мастер-класс из всех, что посещал!' },
+  { participantId: 11, masterClassId: 4, rating: 4, comment: 'Много полезной информации.' },
+  { participantId: 12, masterClassId: 5, rating: 3, comment: 'Средне, ничего нового не узнал.' },
+  { participantId: 13, masterClassId: 5, rating: 5, comment: 'Замечательный мастер-класс!' },
+  { participantId: 14, masterClassId: 5, rating: 4, comment: 'Хорошо структурированная программа.' },
+  { participantId: 15, masterClassId: 6, rating: 5, comment: 'Детокс-программы — это именно то, что нужно.' },
+  { participantId: 16, masterClassId: 6, rating: 4, comment: 'Узнал много о правильном очищении организма.' },
+  { participantId: 17, masterClassId: 7, rating: 5, comment: 'Идеально для спортсменов!' },
+  { participantId: 18, masterClassId: 7, rating: 4, comment: 'Практичные советы по питанию.' },
+  { participantId: 19, masterClassId: 7, rating: 5, comment: 'Очень помогло в тренировках.' },
+  { participantId: 20, masterClassId: 8, rating: 4, comment: 'Полезно для людей с хроническими заболеваниями.' },
+  { participantId: 1, masterClassId: 9, rating: 5, comment: 'Вегетарианство — это просто и вкусно!' },
+  { participantId: 3, masterClassId: 9, rating: 4, comment: 'Много рецептов и идей.' },
+  { participantId: 5, masterClassId: 9, rating: 5, comment: 'Лучший мастер-класс по веганству.' },
+  { participantId: 7, masterClassId: 9, rating: 3, comment: 'Интересно, но хотелось больше деталей.' },
+  { participantId: 2, masterClassId: 10, rating: 4, comment: 'Полезно для будущих мам.' },
+  { participantId: 4, masterClassId: 10, rating: 5, comment: 'Очень важная информация!' },
+  { participantId: 6, masterClassId: 10, rating: 4, comment: 'Хорошо раскрыта тема питания при беременности.' },
+  { participantId: 8, masterClassId: 10, rating: 5, comment: 'Профессиональный подход.' },
+  { participantId: 10, masterClassId: 10, rating: 4, comment: 'Узнала много нового.' },
+  { participantId: 11, masterClassId: 13, rating: 5, comment: 'Наконец понял, как питаться при диабете.' },
+  { participantId: 12, masterClassId: 13, rating: 4, comment: 'Очень полезно для диабетиков.' },
+  { participantId: 13, masterClassId: 13, rating: 5, comment: 'Отличный специалист!' },
 ];
 
 async function seedDatabase() {
   try {
     console.log('Начало заполнения базы данных тестовыми данными...\n');
 
-    // Сброс базы данных
     console.log('Сброс базы данных...');
     await sequelize.sync({ force: true });
     console.log('✓ База данных сброшена\n');
 
-    
     console.log('Создание инструкторов...');
     const instructors = await Instructor.bulkCreate(instructorsData);
     console.log(`✓ Создано ${instructors.length} инструкторов\n`);
 
-    
     console.log('Создание участников...');
     const participants = await Participant.bulkCreate(participantsData);
     console.log(`✓ Создано ${participants.length} участников\n`);
@@ -224,22 +266,39 @@ async function seedDatabase() {
     const passwordHash = await bcrypt.hash(defaultPassword, 10);
     const passwordsData = participants.map(p => ({
       participantId: p.id,
-      passwordHash: passwordHash,
+      passwordHash,
     }));
     await ParticipantPassword.bulkCreate(passwordsData);
     console.log(`✓ Создано ${passwordsData.length} паролей (пароль: ${defaultPassword})\n`);
 
-    
     console.log('Создание мастер-классов...');
-    const masterClasses = await MasterClass.bulkCreate(masterClassesData);
-    console.log(`Создано ${masterClasses.length} мастер-классов\n`);
+    const mcDataClean = masterClassesData.map(({ participantIds, ...rest }) => rest);
+    const masterClasses = await MasterClass.bulkCreate(mcDataClean);
+    console.log(`✓ Создано ${masterClasses.length} мастер-классов\n`);
 
-    const totalRecords = instructors.length + participants.length + masterClasses.length;
-    console.log(`База данных успешно заполнена!`);
-    console.log(`Всего записей: ${totalRecords}`);
-    console.log(`Инструкторов: ${instructors.length}`);
-    console.log(`Участников: ${participants.length}`);
-    console.log(`Мастер-классов: ${masterClasses.length}`);
+    console.log('Привязка участников к мастер-классам...');
+    const participantLinks = [];
+    masterClassesData.forEach((mc, index) => {
+      mc.participantIds.forEach(participantId => {
+        participantLinks.push({
+          masterClassId: masterClasses[index].id,
+          participantId,
+        });
+      });
+    });
+    await MasterClassParticipant.bulkCreate(participantLinks);
+    console.log(`✓ Создано ${participantLinks.length} записей участия\n`);
+
+    console.log('Создание отзывов...');
+    await Review.bulkCreate(reviewsData);
+    console.log(`✓ Создано ${reviewsData.length} отзывов\n`);
+
+    console.log('База данных успешно заполнена!');
+    console.log(`Инструкторов:      ${instructors.length}`);
+    console.log(`Участников:        ${participants.length}`);
+    console.log(`Мастер-классов:    ${masterClasses.length}`);
+    console.log(`Записей участия:   ${participantLinks.length}`);
+    console.log(`Отзывов:           ${reviewsData.length}`);
 
     process.exit(0);
   } catch (error) {
@@ -249,4 +308,3 @@ async function seedDatabase() {
 }
 
 seedDatabase();
-
