@@ -7,6 +7,11 @@ const {
   MasterClassParticipant,
   ParticipantPassword,
   Review,
+  Category,
+  Location,
+  Schedule,
+  Payment,
+  MasterClassCategory,
 } = require('../models');
 
 const instructorsData = [
@@ -45,7 +50,6 @@ const participantsData = [
   { fullName: 'Федоров Федор Федорович', email: 'fedorov@mail.ru', phone: '+375 (29) 110-10-10' },
 ];
 
-// participantIds используются только для создания MasterClassParticipant записей
 const masterClassesData = [
   {
     name: 'Мастер-класс по здоровому питанию 1',
@@ -54,6 +58,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
     instructorId: 1,
     participantIds: [1, 2, 3],
+    categoryIds: [1],
   },
   {
     name: 'Мастер-класс по здоровому питанию 2',
@@ -62,6 +67,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 2,
     participantIds: [4, 5],
+    categoryIds: [2],
   },
   {
     name: 'Мастер-класс по здоровому питанию 3',
@@ -70,6 +76,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800',
     instructorId: 3,
     participantIds: [6, 7, 8, 9],
+    categoryIds: [3],
   },
   {
     name: 'Мастер-класс по здоровому питанию 4',
@@ -78,6 +85,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 4,
     participantIds: [10, 11],
+    categoryIds: [4],
   },
   {
     name: 'Мастер-класс по здоровому питанию 5',
@@ -86,6 +94,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
     instructorId: 5,
     participantIds: [12, 13, 14],
+    categoryIds: [1, 2],
   },
   {
     name: 'Мастер-класс по здоровому питанию 6',
@@ -94,6 +103,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1505968409348-bd000797c92e?w=800',
     instructorId: 6,
     participantIds: [15, 16],
+    categoryIds: [5],
   },
   {
     name: 'Мастер-класс по здоровому питанию 7',
@@ -102,6 +112,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800',
     instructorId: 7,
     participantIds: [17, 18, 19],
+    categoryIds: [6],
   },
   {
     name: 'Мастер-класс по здоровому питанию 8',
@@ -110,6 +121,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=800',
     instructorId: 8,
     participantIds: [20],
+    categoryIds: [4],
   },
   {
     name: 'Мастер-класс по здоровому питанию 9',
@@ -118,6 +130,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 9,
     participantIds: [1, 3, 5, 7],
+    categoryIds: [7],
   },
   {
     name: 'Мастер-класс по здоровому питанию 10',
@@ -126,6 +139,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 10,
     participantIds: [2, 4, 6, 8, 10],
+    categoryIds: [2, 4],
   },
   {
     name: 'Мастер-класс по здоровому питанию 11',
@@ -134,6 +148,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
     instructorId: 1,
     participantIds: [1, 3, 5],
+    categoryIds: [1],
   },
   {
     name: 'Мастер-класс по здоровому питанию 12',
@@ -142,6 +157,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 2,
     participantIds: [7, 9],
+    categoryIds: [2],
   },
   {
     name: 'Мастер-класс по здоровому питанию 13',
@@ -150,6 +166,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800',
     instructorId: 3,
     participantIds: [11, 12, 13],
+    categoryIds: [3, 4],
   },
   {
     name: 'Мастер-класс по здоровому питанию 14',
@@ -158,6 +175,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 4,
     participantIds: [14, 15],
+    categoryIds: [2],
   },
   {
     name: 'Мастер-класс по здоровому питанию 15',
@@ -166,6 +184,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
     instructorId: 5,
     participantIds: [16, 17, 18],
+    categoryIds: [5],
   },
   {
     name: 'Мастер-класс по здоровому питанию 16',
@@ -174,6 +193,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1505968409348-bd000797c92e?w=800',
     instructorId: 6,
     participantIds: [19, 20],
+    categoryIds: [1, 3],
   },
   {
     name: 'Мастер-класс по здоровому питанию 17',
@@ -182,6 +202,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800',
     instructorId: 7,
     participantIds: [1, 2, 3, 4],
+    categoryIds: [6],
   },
   {
     name: 'Мастер-класс по здоровому питанию 18',
@@ -190,6 +211,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=800',
     instructorId: 8,
     participantIds: [5, 6, 7],
+    categoryIds: [4],
   },
   {
     name: 'Мастер-класс по здоровому питанию 19',
@@ -198,6 +220,7 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
     instructorId: 9,
     participantIds: [8, 9, 10],
+    categoryIds: [7],
   },
   {
     name: 'Мастер-класс по здоровому питанию 20',
@@ -206,10 +229,10 @@ const masterClassesData = [
     photo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
     instructorId: 10,
     participantIds: [11, 12, 13, 14, 15],
+    categoryIds: [2, 7],
   },
 ];
 
-// Отзывы: каждый участник оставляет отзыв только на те мастер-классы, в которых участвовал
 const reviewsData = [
   { participantId: 1, masterClassId: 1, rating: 5, comment: 'Отличный мастер-класс, очень познавательно!' },
   { participantId: 2, masterClassId: 1, rating: 4, comment: 'Хороший материал, но хотелось бы больше практики.' },
@@ -245,6 +268,72 @@ const reviewsData = [
   { participantId: 13, masterClassId: 13, rating: 5, comment: 'Отличный специалист!' },
 ];
 
+const categoriesData = [
+  { name: 'Диетология', description: 'Мастер-классы по основам диетологии и составлению рационов' },
+  { name: 'Нутрициология', description: 'Питание с точки зрения науки о нутриентах и биохимии' },
+  { name: 'Эндокринология', description: 'Питание при гормональных нарушениях и заболеваниях щитовидной железы' },
+  { name: 'Гастроэнтерология', description: 'Лечебное питание при заболеваниях желудочно-кишечного тракта' },
+  { name: 'Детокс и очищение', description: 'Программы очищения организма и детокс-питание' },
+  { name: 'Спортивное питание', description: 'Питание для спортсменов, набор массы и восстановление' },
+  { name: 'Растительное питание', description: 'Вегетарианство, веганство и растительные диеты' },
+];
+
+const locationsData = [
+  { name: 'Центр здоровья "Витамин"', address: 'г. Минск, ул. Ленина, 12', capacity: 20 },
+  { name: 'Оздоровительный клуб "Баланс"', address: 'г. Минск, пр. Независимости, 45', capacity: 15 },
+  { name: 'Медицинский центр "Здоровье"', address: 'г. Минск, ул. Притыцкого, 8', capacity: 25 },
+  { name: 'Фитнес-студия "Форма"', address: 'г. Минск, ул. Сурганова, 3', capacity: 30 },
+  { name: 'Конференц-зал "Меридиан"', address: 'г. Минск, пр. Победителей, 100', capacity: 50 },
+];
+
+// Расписание: по 2 сеанса на первые 10 мастер-классов
+const schedulesData = [
+  { masterClassId: 1,  locationId: 1, startDate: '2026-05-05 10:00:00', endDate: '2026-05-05 13:00:00', maxParticipants: 15 },
+  { masterClassId: 1,  locationId: 2, startDate: '2026-05-19 14:00:00', endDate: '2026-05-19 17:00:00', maxParticipants: 15 },
+  { masterClassId: 2,  locationId: 3, startDate: '2026-05-07 10:00:00', endDate: '2026-05-07 12:00:00', maxParticipants: 20 },
+  { masterClassId: 2,  locationId: 4, startDate: '2026-05-21 15:00:00', endDate: '2026-05-21 17:00:00', maxParticipants: 20 },
+  { masterClassId: 3,  locationId: 1, startDate: '2026-05-10 10:00:00', endDate: '2026-05-10 13:00:00', maxParticipants: 15 },
+  { masterClassId: 3,  locationId: 5, startDate: '2026-05-24 10:00:00', endDate: '2026-05-24 13:00:00', maxParticipants: 30 },
+  { masterClassId: 4,  locationId: 2, startDate: '2026-05-12 11:00:00', endDate: '2026-05-12 14:00:00', maxParticipants: 15 },
+  { masterClassId: 4,  locationId: 3, startDate: '2026-05-26 11:00:00', endDate: '2026-05-26 14:00:00', maxParticipants: 20 },
+  { masterClassId: 5,  locationId: 4, startDate: '2026-06-02 10:00:00', endDate: '2026-06-02 12:00:00', maxParticipants: 25 },
+  { masterClassId: 5,  locationId: 1, startDate: '2026-06-16 14:00:00', endDate: '2026-06-16 16:00:00', maxParticipants: 15 },
+  { masterClassId: 6,  locationId: 5, startDate: '2026-06-04 10:00:00', endDate: '2026-06-04 13:00:00', maxParticipants: 30 },
+  { masterClassId: 6,  locationId: 2, startDate: '2026-06-18 15:00:00', endDate: '2026-06-18 18:00:00', maxParticipants: 15 },
+  { masterClassId: 7,  locationId: 4, startDate: '2026-06-06 10:00:00', endDate: '2026-06-06 12:00:00', maxParticipants: 25 },
+  { masterClassId: 7,  locationId: 3, startDate: '2026-06-20 14:00:00', endDate: '2026-06-20 16:00:00', maxParticipants: 20 },
+  { masterClassId: 8,  locationId: 1, startDate: '2026-06-09 11:00:00', endDate: '2026-06-09 14:00:00', maxParticipants: 15 },
+  { masterClassId: 8,  locationId: 5, startDate: '2026-06-23 11:00:00', endDate: '2026-06-23 14:00:00', maxParticipants: 30 },
+  { masterClassId: 9,  locationId: 2, startDate: '2026-07-01 10:00:00', endDate: '2026-07-01 12:00:00', maxParticipants: 15 },
+  { masterClassId: 9,  locationId: 4, startDate: '2026-07-15 14:00:00', endDate: '2026-07-15 16:00:00', maxParticipants: 25 },
+  { masterClassId: 10, locationId: 3, startDate: '2026-07-03 10:00:00', endDate: '2026-07-03 13:00:00', maxParticipants: 20 },
+  { masterClassId: 10, locationId: 1, startDate: '2026-07-17 15:00:00', endDate: '2026-07-17 18:00:00', maxParticipants: 15 },
+];
+
+// Оплаты участников за сеансы (scheduleId соответствует индексу в schedulesData + 1)
+const paymentsData = [
+  { participantId: 1,  scheduleId: 1,  amount: 2500.00, status: 'paid',      paidAt: '2026-04-28 10:00:00' },
+  { participantId: 2,  scheduleId: 1,  amount: 2500.00, status: 'paid',      paidAt: '2026-04-29 11:00:00' },
+  { participantId: 3,  scheduleId: 2,  amount: 2500.00, status: 'paid',      paidAt: '2026-05-01 09:00:00' },
+  { participantId: 4,  scheduleId: 3,  amount: 3000.00, status: 'paid',      paidAt: '2026-04-30 14:00:00' },
+  { participantId: 5,  scheduleId: 4,  amount: 3000.00, status: 'pending',   paidAt: null },
+  { participantId: 6,  scheduleId: 5,  amount: 2800.00, status: 'paid',      paidAt: '2026-05-02 10:00:00' },
+  { participantId: 7,  scheduleId: 5,  amount: 2800.00, status: 'paid',      paidAt: '2026-05-03 11:00:00' },
+  { participantId: 8,  scheduleId: 6,  amount: 2800.00, status: 'paid',      paidAt: '2026-05-04 09:00:00' },
+  { participantId: 9,  scheduleId: 6,  amount: 2800.00, status: 'cancelled', paidAt: null },
+  { participantId: 10, scheduleId: 7,  amount: 3500.00, status: 'paid',      paidAt: '2026-05-05 10:00:00' },
+  { participantId: 11, scheduleId: 7,  amount: 3500.00, status: 'paid',      paidAt: '2026-05-06 12:00:00' },
+  { participantId: 12, scheduleId: 9,  amount: 3200.00, status: 'paid',      paidAt: '2026-05-20 10:00:00' },
+  { participantId: 13, scheduleId: 9,  amount: 3200.00, status: 'paid',      paidAt: '2026-05-21 11:00:00' },
+  { participantId: 14, scheduleId: 10, amount: 3200.00, status: 'pending',   paidAt: null },
+  { participantId: 15, scheduleId: 11, amount: 2900.00, status: 'paid',      paidAt: '2026-05-25 09:00:00' },
+  { participantId: 16, scheduleId: 12, amount: 2900.00, status: 'paid',      paidAt: '2026-06-01 14:00:00' },
+  { participantId: 17, scheduleId: 13, amount: 3300.00, status: 'paid',      paidAt: '2026-05-28 10:00:00' },
+  { participantId: 18, scheduleId: 13, amount: 3300.00, status: 'paid',      paidAt: '2026-05-29 11:00:00' },
+  { participantId: 19, scheduleId: 14, amount: 3300.00, status: 'pending',   paidAt: null },
+  { participantId: 20, scheduleId: 15, amount: 3600.00, status: 'paid',      paidAt: '2026-06-02 10:00:00' },
+];
+
 async function seedDatabase() {
   try {
     console.log('Начало заполнения базы данных тестовыми данными...\n');
@@ -271,8 +360,16 @@ async function seedDatabase() {
     await ParticipantPassword.bulkCreate(passwordsData);
     console.log(`✓ Создано ${passwordsData.length} паролей (пароль: ${defaultPassword})\n`);
 
+    console.log('Создание категорий...');
+    const categories = await Category.bulkCreate(categoriesData);
+    console.log(`✓ Создано ${categories.length} категорий\n`);
+
+    console.log('Создание мест проведения...');
+    const locations = await Location.bulkCreate(locationsData);
+    console.log(`✓ Создано ${locations.length} мест проведения\n`);
+
     console.log('Создание мастер-классов...');
-    const mcDataClean = masterClassesData.map(({ participantIds, ...rest }) => rest);
+    const mcDataClean = masterClassesData.map(({ participantIds, categoryIds, ...rest }) => rest);
     const masterClasses = await MasterClass.bulkCreate(mcDataClean);
     console.log(`✓ Создано ${masterClasses.length} мастер-классов\n`);
 
@@ -280,25 +377,45 @@ async function seedDatabase() {
     const participantLinks = [];
     masterClassesData.forEach((mc, index) => {
       mc.participantIds.forEach(participantId => {
-        participantLinks.push({
-          masterClassId: masterClasses[index].id,
-          participantId,
-        });
+        participantLinks.push({ masterClassId: masterClasses[index].id, participantId });
       });
     });
     await MasterClassParticipant.bulkCreate(participantLinks);
     console.log(`✓ Создано ${participantLinks.length} записей участия\n`);
 
+    console.log('Привязка категорий к мастер-классам...');
+    const categoryLinks = [];
+    masterClassesData.forEach((mc, index) => {
+      mc.categoryIds.forEach(categoryId => {
+        categoryLinks.push({ masterClassId: masterClasses[index].id, categoryId });
+      });
+    });
+    await MasterClassCategory.bulkCreate(categoryLinks);
+    console.log(`✓ Создано ${categoryLinks.length} связей мастер-класс — категория\n`);
+
+    console.log('Создание расписания...');
+    const schedules = await Schedule.bulkCreate(schedulesData);
+    console.log(`✓ Создано ${schedules.length} сеансов расписания\n`);
+
+    console.log('Создание оплат...');
+    const payments = await Payment.bulkCreate(paymentsData);
+    console.log(`✓ Создано ${payments.length} записей об оплате\n`);
+
     console.log('Создание отзывов...');
-    await Review.bulkCreate(reviewsData);
-    console.log(`✓ Создано ${reviewsData.length} отзывов\n`);
+    const reviews = await Review.bulkCreate(reviewsData);
+    console.log(`✓ Создано ${reviews.length} отзывов\n`);
 
     console.log('База данных успешно заполнена!');
-    console.log(`Инструкторов:      ${instructors.length}`);
-    console.log(`Участников:        ${participants.length}`);
-    console.log(`Мастер-классов:    ${masterClasses.length}`);
-    console.log(`Записей участия:   ${participantLinks.length}`);
-    console.log(`Отзывов:           ${reviewsData.length}`);
+    console.log(`Инструкторов:         ${instructors.length}`);
+    console.log(`Участников:           ${participants.length}`);
+    console.log(`Категорий:            ${categories.length}`);
+    console.log(`Мест проведения:      ${locations.length}`);
+    console.log(`Мастер-классов:       ${masterClasses.length}`);
+    console.log(`Записей участия:      ${participantLinks.length}`);
+    console.log(`Связей с категориями: ${categoryLinks.length}`);
+    console.log(`Сеансов расписания:   ${schedules.length}`);
+    console.log(`Оплат:                ${payments.length}`);
+    console.log(`Отзывов:              ${reviews.length}`);
 
     process.exit(0);
   } catch (error) {
