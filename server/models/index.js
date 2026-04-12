@@ -7,28 +7,29 @@ const ParticipantPassword = require('./ParticipantPassword');
 const RefreshToken = require('./RefreshToken');
 const RecoveryToken = require('./RecoveryToken');
 const Review = require('./Review');
+const Category = require('./Category');
+const Location = require('./Location');
+const Schedule = require('./Schedule');
+const Payment = require('./Payment');
+const MasterClassCategory = require('./MasterClassCategory');
 
-
-
-
+// Instructor <-> MasterClass
 Instructor.hasMany(MasterClass, {
   foreignKey: 'instructorId',
   as: 'masterClasses',
 });
-
-
 MasterClass.belongsTo(Instructor, {
   foreignKey: 'instructorId',
   as: 'instructor',
 });
 
+// MasterClass <-> Participant (через junction)
 MasterClass.belongsToMany(Participant, {
   through: MasterClassParticipant,
   foreignKey: 'masterClassId',
   otherKey: 'participantId',
   as: 'participants',
 });
-
 Participant.belongsToMany(MasterClass, {
   through: MasterClassParticipant,
   foreignKey: 'participantId',
@@ -36,44 +37,102 @@ Participant.belongsToMany(MasterClass, {
   as: 'masterClasses',
 });
 
+// Participant -> ParticipantPassword
 Participant.hasOne(ParticipantPassword, {
   foreignKey: 'participantId',
   as: 'password',
   onDelete: 'CASCADE',
 });
 
+// Participant -> RefreshToken
 Participant.hasMany(RefreshToken, {
   foreignKey: 'participantId',
   as: 'refreshTokens',
   onDelete: 'CASCADE',
 });
 
+// Participant -> RecoveryToken
 Participant.hasMany(RecoveryToken, {
   foreignKey: 'participantId',
   as: 'recoveryTokens',
   onDelete: 'CASCADE',
 });
 
+// Review
 Participant.hasMany(Review, {
   foreignKey: 'participantId',
   as: 'reviews',
   onDelete: 'CASCADE',
 });
-
 MasterClass.hasMany(Review, {
   foreignKey: 'masterClassId',
   as: 'reviews',
   onDelete: 'CASCADE',
 });
-
 Review.belongsTo(Participant, {
   foreignKey: 'participantId',
   as: 'participant',
 });
-
 Review.belongsTo(MasterClass, {
   foreignKey: 'masterClassId',
   as: 'masterClass',
+});
+
+// MasterClass <-> Category (через junction)
+MasterClass.belongsToMany(Category, {
+  through: MasterClassCategory,
+  foreignKey: 'masterClassId',
+  otherKey: 'categoryId',
+  as: 'categories',
+});
+Category.belongsToMany(MasterClass, {
+  through: MasterClassCategory,
+  foreignKey: 'categoryId',
+  otherKey: 'masterClassId',
+  as: 'masterClasses',
+});
+
+// MasterClass -> Schedule
+MasterClass.hasMany(Schedule, {
+  foreignKey: 'masterClassId',
+  as: 'schedules',
+  onDelete: 'CASCADE',
+});
+Schedule.belongsTo(MasterClass, {
+  foreignKey: 'masterClassId',
+  as: 'masterClass',
+});
+
+// Location -> Schedule
+Location.hasMany(Schedule, {
+  foreignKey: 'locationId',
+  as: 'schedules',
+});
+Schedule.belongsTo(Location, {
+  foreignKey: 'locationId',
+  as: 'location',
+});
+
+// Schedule -> Payment
+Schedule.hasMany(Payment, {
+  foreignKey: 'scheduleId',
+  as: 'payments',
+  onDelete: 'CASCADE',
+});
+Payment.belongsTo(Schedule, {
+  foreignKey: 'scheduleId',
+  as: 'schedule',
+});
+
+// Participant -> Payment
+Participant.hasMany(Payment, {
+  foreignKey: 'participantId',
+  as: 'payments',
+  onDelete: 'CASCADE',
+});
+Payment.belongsTo(Participant, {
+  foreignKey: 'participantId',
+  as: 'participant',
 });
 
 module.exports = {
@@ -86,5 +145,9 @@ module.exports = {
   RefreshToken,
   RecoveryToken,
   Review,
+  Category,
+  Location,
+  Schedule,
+  Payment,
+  MasterClassCategory,
 };
-
