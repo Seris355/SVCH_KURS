@@ -12,6 +12,7 @@ const Location = require('./Location');
 const Schedule = require('./Schedule');
 const Payment = require('./Payment');
 const MasterClassCategory = require('./MasterClassCategory');
+const Favorite = require('./Favorite');
 
 // Instructor <-> MasterClass
 Instructor.hasMany(MasterClass, {
@@ -135,6 +136,20 @@ Payment.belongsTo(Participant, {
   as: 'participant',
 });
 
+// Participant <-> MasterClass (favorites)
+Participant.belongsToMany(MasterClass, {
+  through: Favorite,
+  foreignKey: 'participantId',
+  otherKey: 'masterClassId',
+  as: 'favorites',
+});
+MasterClass.belongsToMany(Participant, {
+  through: Favorite,
+  foreignKey: 'masterClassId',
+  otherKey: 'participantId',
+  as: 'favoritedBy',
+});
+
 module.exports = {
   sequelize,
   Instructor,
@@ -150,4 +165,5 @@ module.exports = {
   Schedule,
   Payment,
   MasterClassCategory,
+  Favorite,
 };
