@@ -13,6 +13,11 @@ const Schedule = require('./Schedule');
 const Payment = require('./Payment');
 const MasterClassCategory = require('./MasterClassCategory');
 const Favorite = require('./Favorite');
+const ContactRequest = require('./ContactRequest');
+const Test = require('./Test');
+const Question = require('./Question');
+const Answer = require('./Answer');
+const TestResult = require('./TestResult');
 
 // Instructor <-> MasterClass
 Instructor.hasMany(MasterClass, {
@@ -150,6 +155,48 @@ MasterClass.belongsToMany(Participant, {
   as: 'favoritedBy',
 });
 
+// Test -> Question -> Answer
+Test.hasMany(Question, {
+  foreignKey: 'testId',
+  as: 'questions',
+  onDelete: 'CASCADE',
+});
+Question.belongsTo(Test, {
+  foreignKey: 'testId',
+  as: 'test',
+});
+
+Question.hasMany(Answer, {
+  foreignKey: 'questionId',
+  as: 'answers',
+  onDelete: 'CASCADE',
+});
+Answer.belongsTo(Question, {
+  foreignKey: 'questionId',
+  as: 'question',
+});
+
+// Participant -> TestResult <- Test
+Participant.hasMany(TestResult, {
+  foreignKey: 'participantId',
+  as: 'testResults',
+  onDelete: 'CASCADE',
+});
+TestResult.belongsTo(Participant, {
+  foreignKey: 'participantId',
+  as: 'participant',
+});
+
+Test.hasMany(TestResult, {
+  foreignKey: 'testId',
+  as: 'results',
+  onDelete: 'CASCADE',
+});
+TestResult.belongsTo(Test, {
+  foreignKey: 'testId',
+  as: 'test',
+});
+
 module.exports = {
   sequelize,
   Instructor,
@@ -166,4 +213,9 @@ module.exports = {
   Payment,
   MasterClassCategory,
   Favorite,
+  ContactRequest,
+  Test,
+  Question,
+  Answer,
+  TestResult,
 };
