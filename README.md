@@ -1,4 +1,4 @@
 [ПЗ](https://docs.google.com/document/d/1o3V5Ykb_Zoqdxgnl5EqAH9s58sp-RSgD/edit?usp=sharing&ouid=108646347650369872110&rtpof=true&sd=true)
 
-[ПЗ с 15 функциями]()
+[ПЗ с 15 функциями](https://docs.google.com/document/d/1ifjSF-TQuh5ZI5R5aQpfeRtnvO9o-YM4/edit?usp=sharing&ouid=108646347650369872110&rtpof=true&sd=true)
 В том что выше прошлая версия, где я забыл расписать CRUD функции, 12 функций, но потом узнал, что CRUD функции, - это одна функция, а потом понял, что у меня CRUD функции, - это система управления контентом. По итогу добавил 3 новые фукнции: прохождени теста, экспорт отчета в файл, оценка и отзыв о мастер-классе
