@@ -38,8 +38,32 @@ const requireParticipant = (req, res, next) => {
   next();
 };
 
+/** Не блокирует запрос: при валидном Bearer подставляет req.user (для публичных POST). */
+const optionalAttachUser = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = {
+      id: decoded.userId,
+      role: decoded.role || 'participant',
+    };
+  } catch {
+    // неверный токен — обрабатываем как анонимный запрос
+  }
+
+  next();
+};
+
 module.exports = {
   verifyToken,
   requireAdmin,
   requireParticipant,
+  optionalAttachUser,
 };

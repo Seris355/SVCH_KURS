@@ -155,6 +155,17 @@ MasterClass.belongsToMany(Participant, {
   as: 'favoritedBy',
 });
 
+// Participant -> ContactRequest
+Participant.hasMany(ContactRequest, {
+  foreignKey: 'participantId',
+  as: 'contactRequests',
+  onDelete: 'SET NULL',
+});
+ContactRequest.belongsTo(Participant, {
+  foreignKey: 'participantId',
+  as: 'participant',
+});
+
 // Test -> Question -> Answer
 Test.hasMany(Question, {
   foreignKey: 'testId',
