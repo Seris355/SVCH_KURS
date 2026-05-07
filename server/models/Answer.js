@@ -14,11 +14,10 @@ const Answer = sequelize.define('Answer', {
     onDelete: 'CASCADE',
   },
   text: {
-    type: DataTypes.STRING(500),
+    type: DataTypes.TEXT,
     allowNull: false,
     validate: {
-      notEmpty: { msg: 'Текст ответа не может быть пустым' },
-      len: { args: [1, 500], msg: 'Текст ответа от 1 до 500 символов' },
+      notEmpty: { msg: 'Текст варианта ответа не может быть пустым' },
     },
   },
   isCorrect: {
@@ -26,9 +25,23 @@ const Answer = sequelize.define('Answer', {
     allowNull: false,
     defaultValue: false,
   },
+  orderIndex: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: { args: [0], msg: 'Порядок варианта не может быть отрицательным' },
+    },
+  },
 }, {
   tableName: 'answers',
   timestamps: false,
+  indexes: [
+    {
+      name: 'answers_question_order_idx',
+      fields: ['questionId', 'orderIndex'],
+    },
+  ],
 });
 
 module.exports = Answer;

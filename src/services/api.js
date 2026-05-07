@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { authUtils } from '../utils/auth';
 
+// Все запросы к бэкенду — только через этот axios-экземпляр (baseURL, токен, refresh).
+// Для каждой области данных заводите отдельный модуль *Service.js по образцу
+// masterClassService.js: import api, объект с методами, внутри await api.get/post/put/delete.
+// Страницы и компоненты импортируют только *Service, не axios и не URL «вручную».
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({

@@ -20,18 +20,23 @@ const Question = sequelize.define('Question', {
       notEmpty: { msg: 'Текст вопроса не может быть пустым' },
     },
   },
-  orderNumber: {
+  orderIndex: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: 1,
+    defaultValue: 0,
     validate: {
-      min: { args: [1], msg: 'Порядковый номер должен быть не менее 1' },
-      isInt: { msg: 'Порядковый номер должен быть целым числом' },
+      min: { args: [0], msg: 'Порядок вопроса не может быть отрицательным' },
     },
   },
 }, {
   tableName: 'questions',
   timestamps: false,
+  indexes: [
+    {
+      name: 'questions_test_order_idx',
+      fields: ['testId', 'orderIndex'],
+    },
+  ],
 });
 
 module.exports = Question;

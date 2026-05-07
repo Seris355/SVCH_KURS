@@ -19,20 +19,27 @@ const TestResult = sequelize.define('TestResult', {
     references: { model: 'tests', key: 'id' },
     onDelete: 'CASCADE',
   },
-  score: {
+  correctCount: {
     type: DataTypes.INTEGER,
     allowNull: false,
     validate: {
-      min: { args: [0], msg: 'Результат не может быть отрицательным' },
-      isInt: { msg: 'Результат должен быть целым числом' },
+      min: { args: [0], msg: 'Число верных ответов не может быть отрицательным' },
     },
   },
-  totalQuestions: {
+  questionCount: {
     type: DataTypes.INTEGER,
     allowNull: false,
     validate: {
-      min: { args: [1], msg: 'Количество вопросов должно быть не менее 1' },
-      isInt: { msg: 'Количество вопросов должно быть целым числом' },
+      min: { args: [1], msg: 'Число вопросов должно быть не меньше 1' },
+    },
+  },
+  scorePercent: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      min: { args: [0], msg: 'Процент от 0 до 100' },
+      max: { args: [100], msg: 'Процент от 0 до 100' },
+      isInt: { msg: 'Процент должен быть целым числом' },
     },
   },
   completedAt: {
@@ -43,6 +50,12 @@ const TestResult = sequelize.define('TestResult', {
 }, {
   tableName: 'test_results',
   timestamps: false,
+  indexes: [
+    {
+      name: 'test_results_participant_test_idx',
+      fields: ['participantId', 'testId', 'completedAt'],
+    },
+  ],
 });
 
 module.exports = TestResult;
