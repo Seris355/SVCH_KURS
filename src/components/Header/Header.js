@@ -83,6 +83,9 @@ const Header = () => {
           <NavLink to="/admin/masterclasses" className="hn_link_admin" end>
             Управление мастер-классами
           </NavLink>
+          <NavLink to="/admin/contact-requests" className="hn_link_admin" end>
+            Обращения
+          </NavLink>
         </div>
       )}
     </header>

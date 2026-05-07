@@ -11,6 +11,7 @@ import NotFound from './pages/404/404.js';
 import Instructors from './pages/Admin/Instructors/Instructors.js';
 import Participants from './pages/Admin/Participants/Participants.js';
 import MasterClasses from './pages/Admin/MasterClasses/MasterClasses.js';
+import ContactRequests from './pages/Admin/ContactRequests/ContactRequests.js';
 import LoginPage from './pages/LoginPage/LoginPage.js';
 import RegisterPage from './pages/RegisterPage/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js';
@@ -64,6 +65,14 @@ function App() {
             element={
               <PrivateRoute requireRole="admin">
                 <MasterClasses />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/contact-requests"
+            element={
+              <PrivateRoute requireRole="admin">
+                <ContactRequests />
               </PrivateRoute>
             }
           />
