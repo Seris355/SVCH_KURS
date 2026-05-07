@@ -30,6 +30,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/instructors', require('./routes/instructorRoutes'));
 app.use('/api/participants', require('./routes/participantRoutes'));
 app.use('/api/masterclasses', require('./routes/masterClassRoutes'));
+app.use('/api/tests', require('./routes/testRoutes'));
 
 
 app.listen(PORT, () => {
