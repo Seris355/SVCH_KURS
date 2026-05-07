@@ -41,6 +41,9 @@ const Header = () => {
               <NavLink to="/contact" className="hn_link">
                 Контакты
               </NavLink>
+              <NavLink to="/tests" className="hn_link">
+                Тесты
+              </NavLink>
               {user.role === 'participant' && (
                 <NavLink to="/participant/classes" className="hn_link">
                   Мои мастер-классы
@@ -58,6 +61,9 @@ const Header = () => {
               </NavLink>
               <NavLink to="/contact" className="hn_link">
                 Контакты
+              </NavLink>
+              <NavLink to="/tests" className="hn_link">
+                Тесты
               </NavLink>
               <NavLink to="/masterclass" className="hn_link">
                 Мастер-классы

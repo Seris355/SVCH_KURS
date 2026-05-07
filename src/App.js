@@ -17,6 +17,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage.js';
 import ChangePasswordPage from './pages/ChangePasswordPage/ChangePasswordPage.js';
 import ParticipantClasses from './pages/ParticipantClasses/ParticipantClasses.js';
+import Tests from './pages/Tests/Tests.js';
+import TestTake from './pages/TestTake/TestTake.js';
 import './pages/Index/style.css';
 
 function App() {
@@ -32,6 +34,15 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/tests" element={<Tests />} />
+          <Route
+            path="/tests/:id"
+            element={
+              <PrivateRoute requireRole="participant">
+                <TestTake />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/admin/instructors"
             element={
