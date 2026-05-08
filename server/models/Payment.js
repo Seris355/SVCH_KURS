@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -41,14 +42,30 @@ const Payment = sequelize.define('Payment', {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
+  invoiceCode: {
+    type: DataTypes.STRING(48),
+    allowNull: false,
+  },
 }, {
   tableName: 'payments',
   timestamps: false,
+  hooks: {
+    beforeValidate(payment) {
+      if (!payment.invoiceCode) {
+        payment.invoiceCode = `DB-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
+      }
+    },
+  },
   indexes: [
     {
       unique: true,
       fields: ['participantId', 'scheduleId'],
       name: 'payments_participant_schedule_unique',
+    },
+    {
+      unique: true,
+      fields: ['invoiceCode'],
+      name: 'payments_invoice_code_unique',
     },
   ],
 });

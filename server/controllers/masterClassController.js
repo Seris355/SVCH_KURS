@@ -1,4 +1,4 @@
-const { MasterClass, Instructor, Participant } = require('../models');
+const { MasterClass, Instructor, Participant, Schedule, Location, Payment } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getAllMasterClasses = async (req, res) => {
@@ -100,6 +100,19 @@ exports.getMasterClassById = async (req, res) => {
           model: Instructor,
           as: 'instructor',
           attributes: ['id', 'fullName', 'specialization'],
+        },
+        {
+          model: Schedule,
+          as: 'schedules',
+          separate: true,
+          order: [['startDate', 'ASC']],
+          include: [
+            {
+              model: Location,
+              as: 'location',
+              attributes: ['id', 'name', 'address'],
+            },
+          ],
         },
       ],
     });
@@ -342,6 +355,7 @@ exports.deleteMasterClass = async (req, res) => {
 exports.enrollParticipant = async (req, res) => {
   try {
     const { id } = req.params;
+    const { scheduleId } = req.body || {};
     const participantId = req.user.id;
 
     const masterClass = await MasterClass.findByPk(id);
@@ -365,6 +379,57 @@ exports.enrollParticipant = async (req, res) => {
     participantIds.push(participantId);
     await masterClass.update({ participantIds: participantIds });
 
+    let paymentInfo = null;
+    const hasSchedule =
+      scheduleId !== undefined && scheduleId !== null && `${scheduleId}`.trim() !== '';
+
+    if (hasSchedule) {
+      const sid = parseInt(scheduleId, 10);
+      if (Number.isNaN(sid)) {
+        participantIds.splice(participantIds.indexOf(participantId), 1);
+        await masterClass.update({ participantIds: participantIds });
+        return res.status(400).json({
+          success: false,
+          message: 'Некорректный идентификатор сеанса',
+        });
+      }
+
+      const schedule = await Schedule.findByPk(sid);
+      if (!schedule || schedule.masterClassId !== parseInt(id, 10)) {
+        participantIds.splice(participantIds.indexOf(participantId), 1);
+        await masterClass.update({ participantIds: participantIds });
+        return res.status(400).json({
+          success: false,
+          message: 'Сеанс не относится к этому мастер-классу',
+        });
+      }
+
+      try {
+        const payment = await Payment.create({
+          participantId,
+          scheduleId: sid,
+          amount: masterClass.price,
+          status: 'pending',
+        });
+        paymentInfo = {
+          id: payment.id,
+          invoiceCode: payment.invoiceCode,
+          amount: payment.amount,
+          status: payment.status,
+        };
+      } catch (error) {
+        participantIds.splice(participantIds.indexOf(participantId), 1);
+        await masterClass.update({ participantIds: participantIds });
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(400).json({
+            success: false,
+            message: 'Счёт на этот сеанс для вас уже существует',
+          });
+        }
+        throw error;
+      }
+    }
+
     const updatedMasterClass = await MasterClass.findByPk(id, {
       include: [
         {
@@ -379,6 +444,7 @@ exports.enrollParticipant = async (req, res) => {
       success: true,
       message: 'Вы успешно записались на мастер-класс',
       data: updatedMasterClass,
+      payment: paymentInfo,
     });
   } catch (error) {
     res.status(500).json({

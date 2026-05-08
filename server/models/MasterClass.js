@@ -92,6 +92,11 @@ const MasterClass = sequelize.define('MasterClass', {
       },
     },
   },
+  participantIds: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    allowNull: false,
+    defaultValue: [],
+  },
 }, {
   tableName: 'masterclasses',
   timestamps: false,

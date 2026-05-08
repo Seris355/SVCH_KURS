@@ -33,6 +33,7 @@ app.use('/api/masterclasses', require('./routes/masterClassRoutes'));
 app.use('/api/tests', require('./routes/testRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/favorites', require('./routes/favoriteRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
 
 app.listen(PORT, () => {
