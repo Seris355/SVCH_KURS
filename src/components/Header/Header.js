@@ -45,9 +45,14 @@ const Header = () => {
                 Тесты
               </NavLink>
               {user.role === 'participant' && (
-                <NavLink to="/participant/classes" className="hn_link">
-                  Мои мастер-классы
-                </NavLink>
+                <>
+                  <NavLink to="/participant/classes" className="hn_link">
+                    Мои мастер-классы
+                  </NavLink>
+                  <NavLink to="/participant/favorites" className="hn_link">
+                    Избранное
+                  </NavLink>
+                </>
               )}
               <a onClick={handleLogout} className="hn_link">
                 Выйти

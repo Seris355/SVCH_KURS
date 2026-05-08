@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setItemsPerPage } from '../../store/slices/userSettingsSlice';
 import { masterClassService } from '../../services/masterClassService';
+import { favoriteService } from '../../services/favoriteService';
 import MasterClassDetail from '../../components/MasterClassDetail/MasterClassDetail';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -34,6 +35,8 @@ const ParticipantClasses = () => {
   });
   
   const [inputFilters, setInputFilters] = useState(filters);
+
+  const [favoriteIds, setFavoriteIds] = useState(() => new Set());
 
   const loadMasterClasses = useCallback(async () => {
     setLoading(true);
@@ -69,11 +72,43 @@ const ParticipantClasses = () => {
     }
   }, []);
 
+  const loadFavoriteIds = useCallback(async () => {
+    try {
+      const response = await favoriteService.getMy();
+      const ids = new Set((response.data || []).map((mc) => mc.id));
+      setFavoriteIds(ids);
+    } catch (err) {
+      console.error('Ошибка загрузки избранного:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadMasterClasses();
     loadMyClasses();
-  }, [loadMasterClasses, loadMyClasses]);
+    loadFavoriteIds();
+  }, [loadMasterClasses, loadMyClasses, loadFavoriteIds]);
 
+
+  const handleToggleFavorite = async (masterClass) => {
+    const id = masterClass.id;
+    try {
+      if (favoriteIds.has(id)) {
+        await favoriteService.remove(id);
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      } else {
+        await favoriteService.add(id);
+        setFavoriteIds((prev) => new Set(prev).add(id));
+      }
+    } catch (err) {
+      window.alert(
+        err.response?.data?.message || 'Ошибка при работе с избранным'
+      );
+    }
+  };
 
   const handleEnroll = async (masterClass) => {
     try {
@@ -81,6 +116,7 @@ const ParticipantClasses = () => {
       await masterClassService.enroll(masterClass.id);
       await loadMasterClasses();
       await loadMyClasses();
+      await loadFavoriteIds();
     } catch (err) {
       alert(err.response?.data?.message || 'Ошибка при записи на мастер-класс');
     } finally {
@@ -275,13 +311,28 @@ const ParticipantClasses = () => {
                         Просмотр
                       </button>
                       {activeTab === 'all' && (
-                        <button
-                          className={isEnrolled(masterClass.id) ? 'btn-enrolled' : 'btn-enroll'}
-                          onClick={() => handleEnroll(masterClass)}
-                          disabled={isEnrolled(masterClass.id)}
-                        >
-                          {isEnrolled(masterClass.id) ? 'Вы записаны' : 'Записаться'}
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className={
+                              favoriteIds.has(masterClass.id)
+                                ? 'btn-favorite-active'
+                                : 'btn-favorite'
+                            }
+                            onClick={() => handleToggleFavorite(masterClass)}
+                          >
+                            {favoriteIds.has(masterClass.id)
+                              ? 'В избранном'
+                              : 'В избранное'}
+                          </button>
+                          <button
+                            className={isEnrolled(masterClass.id) ? 'btn-enrolled' : 'btn-enroll'}
+                            onClick={() => handleEnroll(masterClass)}
+                            disabled={isEnrolled(masterClass.id)}
+                          >
+                            {isEnrolled(masterClass.id) ? 'Вы записаны' : 'Записаться'}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>

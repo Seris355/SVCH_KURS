@@ -18,6 +18,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage.js';
 import ChangePasswordPage from './pages/ChangePasswordPage/ChangePasswordPage.js';
 import ParticipantClasses from './pages/ParticipantClasses/ParticipantClasses.js';
+import ParticipantFavorites from './pages/ParticipantFavorites/ParticipantFavorites.js';
 import Tests from './pages/Tests/Tests.js';
 import TestTake from './pages/TestTake/TestTake.js';
 import './pages/Index/style.css';
@@ -81,6 +82,14 @@ function App() {
             element={
               <PrivateRoute requireRole="participant">
                 <ParticipantClasses />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/participant/favorites"
+            element={
+              <PrivateRoute requireRole="participant">
+                <ParticipantFavorites />
               </PrivateRoute>
             }
           />
