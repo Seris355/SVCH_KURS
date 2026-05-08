@@ -91,6 +91,9 @@ const Header = () => {
           <NavLink to="/admin/contact-requests" className="hn_link_admin" end>
             Обращения
           </NavLink>
+          <NavLink to="/admin/payments" className="hn_link_admin" end>
+            Счета
+          </NavLink>
         </div>
       )}
     </header>

@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setItemsPerPage } from '../../store/slices/userSettingsSlice';
 import { masterClassService } from '../../services/masterClassService';
 import { favoriteService } from '../../services/favoriteService';
+import { paymentService } from '../../services/paymentService';
 import MasterClassDetail from '../../components/MasterClassDetail/MasterClassDetail';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -20,7 +21,10 @@ const ParticipantClasses = () => {
   const [error, setError] = useState(null);
   const [selectedMasterClass, setSelectedMasterClass] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  
+
+  const [enrollDialog, setEnrollDialog] = useState(null);
+  const [myPayments, setMyPayments] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -82,12 +86,81 @@ const ParticipantClasses = () => {
     }
   }, []);
 
+  const loadPayments = useCallback(async () => {
+    try {
+      const res = await paymentService.getMy();
+      setMyPayments(res.data || []);
+    } catch (err) {
+      console.error('Ошибка загрузки счетов:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadMasterClasses();
     loadMyClasses();
     loadFavoriteIds();
-  }, [loadMasterClasses, loadMyClasses, loadFavoriteIds]);
+    loadPayments();
+  }, [loadMasterClasses, loadMyClasses, loadFavoriteIds, loadPayments]);
 
+  useEffect(() => {
+    if (activeTab === 'payments') {
+      loadPayments();
+    }
+  }, [activeTab, loadPayments]);
+
+
+  const handleConfirmEnroll = async () => {
+    if (!enrollDialog) return;
+    const { masterClass, selectedScheduleId } = enrollDialog;
+    try {
+      setLoading(true);
+      const response = await masterClassService.enroll(masterClass.id, {
+        scheduleId: selectedScheduleId,
+      });
+      setEnrollDialog(null);
+      await loadMasterClasses();
+      await loadMyClasses();
+      await loadFavoriteIds();
+      await loadPayments();
+      if (response.payment) {
+        window.alert(
+          `Запись оформлена.\nКод счёта: ${response.payment.invoiceCode}\nСумма к оплате: ${parseFloat(response.payment.amount).toFixed(2)}`
+        );
+      } else {
+        window.alert('Вы записаны.');
+      }
+    } catch (err) {
+      window.alert(
+        err.response?.data?.message || 'Ошибка при записи на мастер-класс'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEnrollDialog = async (masterClass) => {
+    try {
+      setLoading(true);
+      const response = await masterClassService.getById(masterClass.id);
+      const full = response.data;
+      const schedules = full.schedules || [];
+      if (!schedules.length) {
+        window.alert(
+          'Для этого мастер-класса пока нет сеансов в расписании. Запись с выставлением счёта недоступна — обратитесь к администратору.'
+        );
+        return;
+      }
+      setEnrollDialog({
+        masterClass: full,
+        schedules,
+        selectedScheduleId: schedules[0].id,
+      });
+    } catch {
+      window.alert('Не удалось загрузить расписание');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleToggleFavorite = async (masterClass) => {
     const id = masterClass.id;
@@ -107,20 +180,6 @@ const ParticipantClasses = () => {
       window.alert(
         err.response?.data?.message || 'Ошибка при работе с избранным'
       );
-    }
-  };
-
-  const handleEnroll = async (masterClass) => {
-    try {
-      setLoading(true);
-      await masterClassService.enroll(masterClass.id);
-      await loadMasterClasses();
-      await loadMyClasses();
-      await loadFavoriteIds();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Ошибка при записи на мастер-класс');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -178,7 +237,8 @@ const ParticipantClasses = () => {
     return myClasses.some(mc => mc.id === classId);
   };
 
-  const displayClasses = activeTab === 'all' ? masterClasses : myClasses;
+  const displayClasses =
+    activeTab === 'all' ? masterClasses : activeTab === 'my' ? myClasses : [];
 
   return (
     <div>
@@ -203,6 +263,12 @@ const ParticipantClasses = () => {
               onClick={() => setActiveTab('my')}
             >
               Мои мастер-классы ({myClasses.length})
+            </button>
+            <button
+              className={activeTab === 'payments' ? 'tab active' : 'tab'}
+              onClick={() => setActiveTab('payments')}
+            >
+              Мои счета ({myPayments.length})
             </button>
           </div>
 
@@ -277,68 +343,120 @@ const ParticipantClasses = () => {
             </>
           )}
 
-          {loading && <div className="loading">Загрузка...</div>}
-
-          {!loading && displayClasses.length === 0 ? (
-            <div className="empty-state">Мастер-классы не найдены</div>
-          ) : (
-            <div className="masterclass-grid">
-              {displayClasses.map((masterClass) => (
-                <div key={masterClass.id} className="masterclass-card">
-                  <div className="masterclass-info">
-                    <h3>{masterClass.name}</h3>
-                    <p className="masterclass-description">
-                      {masterClass.description}
-                    </p>
-                    <div className="masterclass-details">
-                      <div className="detail-item">
-                        <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} ₽
-                      </div>
-                      {masterClass.instructor && (
-                        <div className="detail-item">
-                          <strong>Инструктор:</strong> {masterClass.instructor.fullName}
+          {activeTab === 'payments' && (
+            <div className="participant-payments-block">
+              {myPayments.length === 0 ? (
+                <div className="empty-state">У вас пока нет выставленных счетов</div>
+              ) : (
+                <div className="masterclass-grid">
+                  {myPayments.map((p) => (
+                    <div key={p.id} className="masterclass-card">
+                      <div className="masterclass-info">
+                        <h3>Счёт {p.invoiceCode}</h3>
+                        <p className="masterclass-description">
+                          {p.schedule?.masterClass?.name || 'Мастер-класс'}
+                        </p>
+                        <div className="masterclass-details">
+                          <div className="detail-item">
+                            <strong>Сумма:</strong>{' '}
+                            {parseFloat(p.amount).toFixed(2)} ₽
+                          </div>
+                          <div className="detail-item">
+                            <strong>Статус:</strong>{' '}
+                            {p.status === 'paid'
+                              ? 'Оплачено'
+                              : p.status === 'cancelled'
+                                ? 'Отменён'
+                                : 'Ожидает оплаты'}
+                          </div>
+                          {p.schedule?.startDate && (
+                            <div className="detail-item">
+                              <strong>Сеанс:</strong>{' '}
+                              {new Date(p.schedule.startDate).toLocaleString('ru-RU')}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className="detail-item">
-                        <strong>Участников:</strong> {masterClass.participants?.length || 0}
                       </div>
                     </div>
-                    <div className="card-actions">
-                      <button
-                        className="btn-view"
-                        onClick={() => handleView(masterClass)}
-                      >
-                        Просмотр
-                      </button>
-                      {activeTab === 'all' && (
-                        <>
-                          <button
-                            type="button"
-                            className={
-                              favoriteIds.has(masterClass.id)
-                                ? 'btn-favorite-active'
-                                : 'btn-favorite'
-                            }
-                            onClick={() => handleToggleFavorite(masterClass)}
-                          >
-                            {favoriteIds.has(masterClass.id)
-                              ? 'В избранном'
-                              : 'В избранное'}
-                          </button>
-                          <button
-                            className={isEnrolled(masterClass.id) ? 'btn-enrolled' : 'btn-enroll'}
-                            onClick={() => handleEnroll(masterClass)}
-                            disabled={isEnrolled(masterClass.id)}
-                          >
-                            {isEnrolled(masterClass.id) ? 'Вы записаны' : 'Записаться'}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
+          )}
+
+          {activeTab !== 'payments' && (
+            <>
+              {loading && <div className="loading">Загрузка...</div>}
+
+              {!loading && displayClasses.length === 0 ? (
+                <div className="empty-state">Мастер-классы не найдены</div>
+              ) : (
+                <div className="masterclass-grid">
+                  {displayClasses.map((masterClass) => (
+                    <div key={masterClass.id} className="masterclass-card">
+                      <div className="masterclass-info">
+                        <h3>{masterClass.name}</h3>
+                        <p className="masterclass-description">
+                          {masterClass.description}
+                        </p>
+                        <div className="masterclass-details">
+                          <div className="detail-item">
+                            <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} ₽
+                          </div>
+                          {masterClass.instructor && (
+                            <div className="detail-item">
+                              <strong>Инструктор:</strong> {masterClass.instructor.fullName}
+                            </div>
+                          )}
+                          <div className="detail-item">
+                            <strong>Участников:</strong>{' '}
+                            {masterClass.participants?.length || 0}
+                          </div>
+                        </div>
+                        <div className="card-actions">
+                          <button
+                            className="btn-view"
+                            onClick={() => handleView(masterClass)}
+                          >
+                            Просмотр
+                          </button>
+                          {activeTab === 'all' && (
+                            <>
+                              <button
+                                type="button"
+                                className={
+                                  favoriteIds.has(masterClass.id)
+                                    ? 'btn-favorite-active'
+                                    : 'btn-favorite'
+                                }
+                                onClick={() => handleToggleFavorite(masterClass)}
+                              >
+                                {favoriteIds.has(masterClass.id)
+                                  ? 'В избранном'
+                                  : 'В избранное'}
+                              </button>
+                              <button
+                                className={
+                                  isEnrolled(masterClass.id)
+                                    ? 'btn-enrolled'
+                                    : 'btn-enroll'
+                                }
+                                onClick={() => openEnrollDialog(masterClass)}
+                                disabled={isEnrolled(masterClass.id)}
+                              >
+                                {isEnrolled(masterClass.id)
+                                  ? 'Вы записаны'
+                                  : 'Записаться'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {activeTab === 'all' && pagination.totalPages > 1 && (
@@ -366,6 +484,62 @@ const ParticipantClasses = () => {
               masterClass={selectedMasterClass}
               onClose={handleCloseDetail}
             />
+          )}
+
+          {enrollDialog && (
+            <div
+              className="enroll-modal-overlay"
+              role="presentation"
+              onClick={() => setEnrollDialog(null)}
+            >
+              <div
+                className="enroll-modal-box"
+                role="dialog"
+                aria-modal="true"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="enroll-modal-title">Выберите сеанс</h2>
+                <p>{enrollDialog.masterClass.name}</p>
+                <label className="enroll-modal-label" htmlFor="enroll-schedule">
+                  Дата и место
+                </label>
+                <select
+                  id="enroll-schedule"
+                  className="enroll-modal-select"
+                  value={enrollDialog.selectedScheduleId}
+                  onChange={(e) =>
+                    setEnrollDialog((prev) => ({
+                      ...prev,
+                      selectedScheduleId: parseInt(e.target.value, 10),
+                    }))
+                  }
+                >
+                  {enrollDialog.schedules.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {new Date(s.startDate).toLocaleString('ru-RU')}
+                      {s.location?.name ? ` — ${s.location.name}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <div className="enroll-modal-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setEnrollDialog(null)}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleConfirmEnroll}
+                    disabled={loading}
+                  >
+                    {loading ? '…' : 'Записаться и получить счёт'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </main>

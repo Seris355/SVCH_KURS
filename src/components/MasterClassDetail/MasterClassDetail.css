@@ -82,6 +82,12 @@
   justify-content: flex-end;
 }
 
+.detail-field .schedules-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.6;
+}
+
 @media (max-width: 768px) {
   .detail-modal {
     max-width: 100%;

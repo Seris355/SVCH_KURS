@@ -213,6 +213,59 @@ main.page-container {
   color: var(--color-text-primary);
 }
 
+.enroll-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.enroll-modal-box {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  max-width: 420px;
+  width: 92%;
+  box-shadow: var(--shadow-lg);
+}
+
+.enroll-modal-title {
+  margin: 0 0 0.75rem;
+  font-size: var(--font-size-lg);
+}
+
+.enroll-modal-label {
+  display: block;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.enroll-modal-select {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.enroll-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.participant-payments-block {
+  margin-top: 1rem;
+}
+
 .pagination {
   display: flex;
   justify-content: center;

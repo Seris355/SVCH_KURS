@@ -37,8 +37,8 @@ export const masterClassService = {
     return response.data;
   },
 
-  enroll: async (id) => {
-    const response = await api.post(`/masterclasses/${id}/enroll`);
+  enroll: async (id, payload = {}) => {
+    const response = await api.post(`/masterclasses/${id}/enroll`, payload);
     return response.data;
   },
 

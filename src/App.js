@@ -12,6 +12,7 @@ import Instructors from './pages/Admin/Instructors/Instructors.js';
 import Participants from './pages/Admin/Participants/Participants.js';
 import MasterClasses from './pages/Admin/MasterClasses/MasterClasses.js';
 import ContactRequests from './pages/Admin/ContactRequests/ContactRequests.js';
+import AdminPayments from './pages/Admin/Payments/Payments.js';
 import LoginPage from './pages/LoginPage/LoginPage.js';
 import RegisterPage from './pages/RegisterPage/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js';
@@ -74,6 +75,14 @@ function App() {
             element={
               <PrivateRoute requireRole="admin">
                 <ContactRequests />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/payments"
+            element={
+              <PrivateRoute requireRole="admin">
+                <AdminPayments />
               </PrivateRoute>
             }
           />

@@ -47,6 +47,22 @@ const MasterClassDetail = ({ masterClass, onClose }) => {
             </div>
           )}
 
+          {masterClass.schedules && masterClass.schedules.length > 0 && (
+            <div className="detail-field">
+              <label>Ближайшие сеансы:</label>
+              <ul className="schedules-list">
+                {masterClass.schedules.map((s) => (
+                  <li key={s.id}>
+                    {new Date(s.startDate).toLocaleString('ru-RU')}
+                    {' — '}
+                    {new Date(s.endDate).toLocaleString('ru-RU')}
+                    {s.location?.name && ` · ${s.location.name}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {masterClass.participants && masterClass.participants.length > 0 && (
             <div className="detail-field">
               <label>Участники ({masterClass.participants.length}):</label>
