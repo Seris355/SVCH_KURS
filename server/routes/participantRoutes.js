@@ -5,6 +5,7 @@ const { verifyToken, requireAdmin } = require('../middleware/authMiddleware');
 
 
 router.get('/', verifyToken, requireAdmin, participantController.getAllParticipants);
+router.get('/export/pdf', verifyToken, requireAdmin, participantController.exportParticipantsPdf);
 router.get('/:id/exists', verifyToken, requireAdmin, participantController.checkParticipantExists);
 router.get('/:id', verifyToken, requireAdmin, participantController.getParticipantById);
 router.put('/:id/password', verifyToken, requireAdmin, participantController.changePassword);

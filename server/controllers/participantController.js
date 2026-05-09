@@ -1,6 +1,85 @@
 const bcrypt = require('bcrypt');
+const PDFDocument = require('pdfkit');
 const { Participant, ParticipantPassword } = require('../models');
 const { Op, Sequelize } = require('sequelize');
+const { resolveUnicodeTtfPath } = require('../utils/pdfFonts');
+
+exports.exportParticipantsPdf = async (req, res) => {
+  try {
+    const { search, email, phone } = req.query;
+
+    const where = {};
+
+    if (email) {
+      where.email = {
+        [Op.iLike]: `%${email}%`,
+      };
+    }
+
+    if (phone) {
+      where.phone = {
+        [Op.iLike]: `%${phone}%`,
+      };
+    }
+
+    if (search) {
+      where[Op.or] = [
+        { fullName: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { phone: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    const rows = await Participant.findAll({
+      where,
+      order: [['id', 'ASC']],
+    });
+
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="uchastniki.pdf"'
+    );
+    doc.pipe(res);
+
+    const fontPath = resolveUnicodeTtfPath();
+    if (fontPath) {
+      doc.font(fontPath);
+    }
+
+    doc.fontSize(14).text('Список участников', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(9);
+
+    if (rows.length === 0) {
+      doc.text('Нет записей по выбранным фильтрам.');
+      doc.end();
+      return;
+    }
+
+    rows.forEach((p, i) => {
+      const reg =
+        p.createdAt != null
+          ? new Date(p.createdAt).toLocaleString('ru-RU')
+          : '—';
+      doc.text(
+        `${i + 1}. ${p.fullName} | ${p.email} | ${p.phone} | регистрация: ${reg}`
+      );
+      doc.moveDown(0.35);
+    });
+
+    doc.end();
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка при формировании PDF',
+        error: error.message,
+      });
+    }
+  }
+};
 
 exports.getAllParticipants = async (req, res) => {
   try {
