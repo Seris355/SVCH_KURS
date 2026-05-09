@@ -1,0 +1,31 @@
+.review-form {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.review-form-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.review-form-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.review-form-select,
+.review-form-textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.review-form-error {
+  color: #c62828;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
