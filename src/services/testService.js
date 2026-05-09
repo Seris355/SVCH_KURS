@@ -35,4 +35,34 @@ export const testService = {
     const response = await api.delete(`/tests/${id}`);
     return response.data;
   },
+
+  createQuestion: async (testId, data) => {
+    const response = await api.post(`/tests/${testId}/questions`, data);
+    return response.data;
+  },
+
+  updateQuestion: async (questionId, data) => {
+    const response = await api.put(`/tests/questions/${questionId}`, data);
+    return response.data;
+  },
+
+  deleteQuestion: async (questionId) => {
+    const response = await api.delete(`/tests/questions/${questionId}`);
+    return response.data;
+  },
+
+  createAnswer: async (questionId, data) => {
+    const response = await api.post(`/tests/questions/${questionId}/answers`, data);
+    return response.data;
+  },
+
+  updateAnswer: async (answerId, data) => {
+    const response = await api.put(`/tests/answers/${answerId}`, data);
+    return response.data;
+  },
+
+  deleteAnswer: async (answerId) => {
+    const response = await api.delete(`/tests/answers/${answerId}`);
+    return response.data;
+  },
 };
