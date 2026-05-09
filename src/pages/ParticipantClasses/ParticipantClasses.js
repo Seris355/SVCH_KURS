@@ -1,22 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setItemsPerPage } from '../../store/slices/userSettingsSlice';
+import { Link } from 'react-router-dom';
 import { masterClassService } from '../../services/masterClassService';
 import { favoriteService } from '../../services/favoriteService';
 import { paymentService } from '../../services/paymentService';
+import { instructorService } from '../../services/instructorService';
 import MasterClassDetail from '../../components/MasterClassDetail/MasterClassDetail';
+import ReviewForm from '../../components/ReviewForm/ReviewForm';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
+import { authUtils } from '../../utils/auth';
 import './ParticipantClasses.css';
 
-const ParticipantClasses = () => {
-  const dispatch = useAppDispatch();
-  const { itemsPerPage } = useAppSelector(
-    (state) => state.userSettings
-  );
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
+const defaultFilterState = {
+  search: '',
+  instructorIds: [],
+  minPrice: '',
+  maxPrice: '',
+  sortBy: 'price',
+  sortOrder: 'ASC',
+};
+
+const ParticipantClasses = () => {
   const [masterClasses, setMasterClasses] = useState([]);
   const [myClasses, setMyClasses] = useState([]);
+  const [instructors, setInstructors] = useState([]);
+  const [catalogLimit, setCatalogLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedMasterClass, setSelectedMasterClass] = useState(null);
@@ -30,15 +40,9 @@ const ParticipantClasses = () => {
     total: 0,
     totalPages: 0,
   });
-  
-  const [filters, setFilters] = useState({
-    search: '',
-    instructorId: '',
-    minPrice: '',
-    maxPrice: '',
-  });
-  
-  const [inputFilters, setInputFilters] = useState(filters);
+
+  const [filters, setFilters] = useState(defaultFilterState);
+  const [inputFilters, setInputFilters] = useState(defaultFilterState);
 
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
 
@@ -46,14 +50,29 @@ const ParticipantClasses = () => {
     setLoading(true);
     setError(null);
     try {
+      const {
+        instructorIds,
+        search,
+        minPrice,
+        maxPrice,
+        sortBy,
+        sortOrder,
+      } = filters;
+
       const params = {
         page: currentPage,
-        limit: itemsPerPage,
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, v]) => v !== '')
-        ),
+        limit: catalogLimit,
+        sortBy: sortBy || 'price',
+        sortOrder: sortOrder || 'ASC',
       };
-      
+
+      if (search) params.search = search;
+      if (minPrice) params.minPrice = minPrice;
+      if (maxPrice) params.maxPrice = maxPrice;
+      if (instructorIds?.length > 0) {
+        params.instructorId = instructorIds.join(',');
+      }
+
       const response = await masterClassService.getAll(params);
       setMasterClasses(response.data || []);
       setPagination({
@@ -65,7 +84,7 @@ const ParticipantClasses = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters, itemsPerPage]);
+  }, [currentPage, filters, catalogLimit]);
 
   const loadMyClasses = useCallback(async () => {
     try {
@@ -95,19 +114,28 @@ const ParticipantClasses = () => {
     }
   }, []);
 
+  const loadInstructors = useCallback(async () => {
+    try {
+      const res = await instructorService.getAll({ limit: 200, sortBy: 'fullName', sortOrder: 'ASC' });
+      setInstructors(res.data || []);
+    } catch {
+      setInstructors([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadMasterClasses();
     loadMyClasses();
     loadFavoriteIds();
     loadPayments();
-  }, [loadMasterClasses, loadMyClasses, loadFavoriteIds, loadPayments]);
+    loadInstructors();
+  }, [loadMasterClasses, loadMyClasses, loadFavoriteIds, loadPayments, loadInstructors]);
 
   useEffect(() => {
     if (activeTab === 'payments') {
       loadPayments();
     }
   }, [activeTab, loadPayments]);
-
 
   const handleConfirmEnroll = async () => {
     if (!enrollDialog) return;
@@ -183,12 +211,21 @@ const ParticipantClasses = () => {
     }
   };
 
+  const refreshSelectedDetail = async (classId) => {
+    try {
+      const response = await masterClassService.getById(classId);
+      setSelectedMasterClass(response.data);
+    } catch {
+      /* ignore */
+    }
+  };
+
   const handleView = async (masterClass) => {
     try {
       setLoading(true);
       const response = await masterClassService.getById(masterClass.id);
       setSelectedMasterClass(response.data);
-    } catch (err) {
+    } catch {
       alert('Ошибка при загрузке детальной информации');
     } finally {
       setLoading(false);
@@ -200,7 +237,14 @@ const ParticipantClasses = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters(prev => ({ ...prev, [field]: value }));
+    setInputFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleInstructorMultiChange = (e) => {
+    const selected = Array.from(e.target.selectedOptions, (o) => parseInt(o.value, 10)).filter(
+      (n) => !Number.isNaN(n)
+    );
+    handleFilterChange('instructorIds', selected);
   };
 
   const handleSearch = () => {
@@ -209,14 +253,8 @@ const ParticipantClasses = () => {
   };
 
   const handleResetFilters = () => {
-    const defaultFilters = {
-      search: '',
-      instructorId: '',
-      minPrice: '',
-      maxPrice: '',
-    };
-    setInputFilters(defaultFilters);
-    setFilters(defaultFilters);
+    setInputFilters(defaultFilterState);
+    setFilters(defaultFilterState);
     setCurrentPage(1);
   };
 
@@ -224,17 +262,25 @@ const ParticipantClasses = () => {
     setCurrentPage(newPage);
   };
 
-  const handleItemsPerPageChange = (value) => {
-    const numValue = parseInt(value, 10);
-    if (numValue > 0 && numValue <= 100) {
-      dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1);
+  const handleExportPdf = async () => {
+    try {
+      await masterClassService.exportMyClassesPdf();
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Не удалось скачать PDF');
     }
   };
 
+  const isEnrolled = (classId) => myClasses.some((mc) => mc.id === classId);
 
-  const isEnrolled = (classId) => {
-    return myClasses.some(mc => mc.id === classId);
+  const user = authUtils.getUser();
+  const participantId = user?.id;
+
+  const hasReviewForSelected =
+    selectedMasterClass?.reviews?.some((r) => r.participantId === participantId) ?? false;
+
+  const fmtSchedule = (mc) => {
+    const s = mc.schedules?.[0]?.startDate;
+    return s ? new Date(s).toLocaleString('ru-RU') : '—';
   };
 
   const displayClasses =
@@ -247,6 +293,14 @@ const ParticipantClasses = () => {
         <div className="masterclasses-page">
           <div className="masterclasses-header">
             <h1>Мастер-классы</h1>
+            <div className="cabinet-actions-row">
+              <button type="button" className="btn-secondary" onClick={handleExportPdf}>
+                Скачать PDF — мои записи
+              </button>
+              <Link className="btn-view" to="/masterclass">
+                Открыть публичный каталог
+              </Link>
+            </div>
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -255,92 +309,125 @@ const ParticipantClasses = () => {
             <button
               className={activeTab === 'all' ? 'tab active' : 'tab'}
               onClick={() => setActiveTab('all')}
+              type="button"
             >
               Все мастер-классы
             </button>
             <button
               className={activeTab === 'my' ? 'tab active' : 'tab'}
               onClick={() => setActiveTab('my')}
+              type="button"
             >
               Мои мастер-классы ({myClasses.length})
             </button>
             <button
               className={activeTab === 'payments' ? 'tab active' : 'tab'}
               onClick={() => setActiveTab('payments')}
+              type="button"
             >
               Мои счета ({myPayments.length})
             </button>
           </div>
 
           {activeTab === 'all' && (
-            <>
-              <div className="filters">
+            <div className="filters">
+              <div className="filter-group">
+                <label>Поиск:</label>
+                <input
+                  type="text"
+                  value={inputFilters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
+                  placeholder="Поиск по названию или описанию..."
+                />
+              </div>
+              <div className="filter-group">
+                <label>Инструкторы (Ctrl+клик — несколько):</label>
+                <select
+                  className="filter-multiselect"
+                  multiple
+                  size={Math.min(instructors.length, 6) || 3}
+                  value={inputFilters.instructorIds.map(String)}
+                  onChange={handleInstructorMultiChange}
+                >
+                  {instructors.map((ins) => (
+                    <option key={ins.id} value={ins.id}>
+                      {ins.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-row">
                 <div className="filter-group">
-                  <label>Поиск:</label>
-                  <input
-                    type="text"
-                    value={inputFilters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSearch();
-                      }
-                    }}
-                    placeholder="Поиск по названию или описанию..."
-                  />
-                </div>
-                <div className="filter-group">
-                  <label>ID Инструктора:</label>
-                  <input
-                    type="number"
-                    value={inputFilters.instructorId}
-                    onChange={(e) => handleFilterChange('instructorId', e.target.value)}
-                    placeholder="Фильтр по инструктору..."
-                  />
-                </div>
-                <div className="filter-row">
-                  <div className="filter-group">
-                    <label>Цена от:</label>
-                    <input
-                      type="number"
-                      value={inputFilters.minPrice}
-                      onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                      placeholder="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div className="filter-group">
-                    <label>Цена до:</label>
-                    <input
-                      type="number"
-                      value={inputFilters.maxPrice}
-                      onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                      placeholder="10000"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-                <div className="filter-group">
-                  <label>Элементов на странице:</label>
+                  <label>Цена от:</label>
                   <input
                     type="number"
-                    min="1"
-                    max="100"
-                    value={itemsPerPage}
-                    onChange={(e) => handleItemsPerPageChange(e.target.value)}
-                    style={{ width: '60px', padding: '5px' }}
+                    value={inputFilters.minPrice}
+                    onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                    placeholder="0"
+                    step="0.01"
                   />
                 </div>
-                <div className="filter-group filter-buttons">
-                  <button className="btn-primary" onClick={handleSearch}>
-                    Найти
-                  </button>
-                  <button className="btn-secondary" onClick={handleResetFilters}>
-                    Сбросить
-                  </button>
+                <div className="filter-group">
+                  <label>Цена до:</label>
+                  <input
+                    type="number"
+                    value={inputFilters.maxPrice}
+                    onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                    placeholder="10000"
+                    step="0.01"
+                  />
                 </div>
               </div>
-            </>
+              <div className="filter-group filter-sort">
+                <label>Сортировка:</label>
+                <div className="sort-controls">
+                  <select
+                    value={inputFilters.sortBy}
+                    onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                  >
+                    <option value="price">Цена</option>
+                    <option value="name">Название</option>
+                    <option value="id">ID</option>
+                  </select>
+                  <select
+                    value={inputFilters.sortOrder}
+                    onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
+                  >
+                    <option value="ASC">По возрастанию</option>
+                    <option value="DESC">По убыванию</option>
+                  </select>
+                </div>
+              </div>
+              <div className="filter-group">
+                <label>Элементов на странице:</label>
+                <select
+                  value={catalogLimit}
+                  onChange={(e) => {
+                    setCatalogLimit(parseInt(e.target.value, 10));
+                    setCurrentPage(1);
+                  }}
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group filter-buttons">
+                <button className="btn-primary" type="button" onClick={handleSearch}>
+                  Найти
+                </button>
+                <button className="btn-secondary" type="button" onClick={handleResetFilters}>
+                  Сбросить
+                </button>
+              </div>
+            </div>
           )}
 
           {activeTab === 'payments' && (
@@ -358,8 +445,7 @@ const ParticipantClasses = () => {
                         </p>
                         <div className="masterclass-details">
                           <div className="detail-item">
-                            <strong>Сумма:</strong>{' '}
-                            {parseFloat(p.amount).toFixed(2)} ₽
+                            <strong>Сумма:</strong> {parseFloat(p.amount).toFixed(2)} ₽
                           </div>
                           <div className="detail-item">
                             <strong>Статус:</strong>{' '}
@@ -394,11 +480,14 @@ const ParticipantClasses = () => {
                 <div className="masterclass-grid">
                   {displayClasses.map((masterClass) => (
                     <div key={masterClass.id} className="masterclass-card">
+                      {masterClass.photo && activeTab === 'all' && (
+                        <div className="participant-mc-card-photo">
+                          <img src={masterClass.photo} alt="" />
+                        </div>
+                      )}
                       <div className="masterclass-info">
                         <h3>{masterClass.name}</h3>
-                        <p className="masterclass-description">
-                          {masterClass.description}
-                        </p>
+                        <p className="masterclass-description">{masterClass.description}</p>
                         <div className="masterclass-details">
                           <div className="detail-item">
                             <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} ₽
@@ -408,13 +497,25 @@ const ParticipantClasses = () => {
                               <strong>Инструктор:</strong> {masterClass.instructor.fullName}
                             </div>
                           )}
+                          {activeTab === 'all' && (
+                            <div className="detail-item">
+                              <strong>Дата (ближайший сеанс):</strong> {fmtSchedule(masterClass)}
+                            </div>
+                          )}
+                          <div className="detail-item">
+                            <strong>Средняя оценка:</strong>{' '}
+                            {masterClass.avgRating != null ? `${masterClass.avgRating} ★` : '—'}
+                          </div>
                           <div className="detail-item">
                             <strong>Участников:</strong>{' '}
-                            {masterClass.participants?.length || 0}
+                            {masterClass.participantCount ??
+                              masterClass.participants?.length ??
+                              0}
                           </div>
                         </div>
                         <div className="card-actions">
                           <button
+                            type="button"
                             className="btn-view"
                             onClick={() => handleView(masterClass)}
                           >
@@ -436,17 +537,14 @@ const ParticipantClasses = () => {
                                   : 'В избранное'}
                               </button>
                               <button
+                                type="button"
                                 className={
-                                  isEnrolled(masterClass.id)
-                                    ? 'btn-enrolled'
-                                    : 'btn-enroll'
+                                  isEnrolled(masterClass.id) ? 'btn-enrolled' : 'btn-enroll'
                                 }
                                 onClick={() => openEnrollDialog(masterClass)}
                                 disabled={isEnrolled(masterClass.id)}
                               >
-                                {isEnrolled(masterClass.id)
-                                  ? 'Вы записаны'
-                                  : 'Записаться'}
+                                {isEnrolled(masterClass.id) ? 'Вы записаны' : 'Записаться'}
                               </button>
                             </>
                           )}
@@ -462,6 +560,7 @@ const ParticipantClasses = () => {
           {activeTab === 'all' && pagination.totalPages > 1 && (
             <div className="pagination">
               <button
+                type="button"
                 disabled={currentPage === 1}
                 onClick={() => handlePageChange(currentPage - 1)}
               >
@@ -471,6 +570,7 @@ const ParticipantClasses = () => {
                 Страница {currentPage} из {pagination.totalPages}
               </span>
               <button
+                type="button"
                 disabled={currentPage === pagination.totalPages}
                 onClick={() => handlePageChange(currentPage + 1)}
               >
@@ -483,6 +583,19 @@ const ParticipantClasses = () => {
             <MasterClassDetail
               masterClass={selectedMasterClass}
               onClose={handleCloseDetail}
+              reviewFormSlot={
+                isEnrolled(selectedMasterClass.id) && !hasReviewForSelected ? (
+                  <ReviewForm
+                    masterClassId={selectedMasterClass.id}
+                    onSuccess={() => refreshSelectedDetail(selectedMasterClass.id)}
+                  />
+                ) : null
+              }
+              noteBelowReviews={
+                isEnrolled(selectedMasterClass.id) && hasReviewForSelected ? (
+                  <p className="review-note">Вы уже оставили отзыв на этот мастер-класс.</p>
+                ) : null
+              }
             />
           )}
 
