@@ -1,0 +1,56 @@
+.mc-public-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.mc-public-breadcrumbs {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.mc-public-hero {
+  width: 100%;
+  max-height: 320px;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.mc-public-hero img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.mc-public-desc {
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.mc-public-section {
+  margin-top: 1.75rem;
+}
+
+.mc-public-reviews {
+  list-style: none;
+  padding: 0;
+}
+
+.mc-public-reviews li {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 0;
+}
+
+.mc-public-actions {
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.instructor-public-spec {
+  font-size: 1.1rem;
+  color: rgba(0, 0, 0, 0.7);
+}
