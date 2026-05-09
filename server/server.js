@@ -30,8 +30,12 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/instructors', require('./routes/instructorRoutes'));
 app.use('/api/participants', require('./routes/participantRoutes'));
 app.use('/api/masterclasses', require('./routes/masterClassRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/locations', require('./routes/locationRoutes'));
+app.use('/api/schedules', require('./routes/scheduleRoutes'));
 app.use('/api/tests', require('./routes/testRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/favorites', require('./routes/favoriteRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 
