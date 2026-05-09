@@ -37,6 +37,27 @@
   border-bottom: none;
 }
 
+.reviews-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.review-item {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-rating {
+  margin-left: 0.35rem;
+}
+
+.review-comment {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
 .detail-field label {
   display: block;
   font-weight: 600;

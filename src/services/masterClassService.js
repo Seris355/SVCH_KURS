@@ -46,4 +46,19 @@ export const masterClassService = {
     const response = await api.get('/masterclasses/my-classes');
     return response.data;
   },
+
+  exportMyClassesPdf: async () => {
+    const response = await api.get('/masterclasses/my-classes/export-pdf', {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'moi-master-klassy.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

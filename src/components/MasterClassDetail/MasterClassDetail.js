@@ -1,8 +1,16 @@
 import React from 'react';
 import './MasterClassDetail.css';
 
-const MasterClassDetail = ({ masterClass, onClose }) => {
+const MasterClassDetail = ({
+  masterClass,
+  onClose,
+  reviewFormSlot = null,
+  noteBelowReviews = null,
+}) => {
   if (!masterClass) return null;
+
+  const avg = masterClass.avgRating;
+  const reviews = masterClass.reviews || [];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -38,6 +46,15 @@ const MasterClassDetail = ({ masterClass, onClose }) => {
             <span>{parseFloat(masterClass.price).toFixed(2)} ₽</span>
           </div>
 
+          {avg != null && (
+            <div className="detail-field">
+              <label>Средняя оценка:</label>
+              <span>
+                {avg} ★ ({masterClass.reviewCount ?? reviews.length} отзывов)
+              </span>
+            </div>
+          )}
+
           {masterClass.instructor && (
             <div className="detail-field">
               <label>Инструктор:</label>
@@ -63,11 +80,28 @@ const MasterClassDetail = ({ masterClass, onClose }) => {
             </div>
           )}
 
+          {reviews.length > 0 && (
+            <div className="detail-field masterclass-reviews-block">
+              <label>Отзывы</label>
+              <ul className="reviews-list">
+                {reviews.map((r) => (
+                  <li key={r.id} className="review-item">
+                    <strong>{r.participant?.fullName || 'Участник'}</strong>
+                    <span className="review-rating"> {r.rating} ★</span>
+                    {r.comment && <p className="review-comment">{r.comment}</p>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {noteBelowReviews}
+
           {masterClass.participants && masterClass.participants.length > 0 && (
             <div className="detail-field">
               <label>Участники ({masterClass.participants.length}):</label>
               <div className="participants-list">
-                {masterClass.participants.map(participant => (
+                {masterClass.participants.map((participant) => (
                   <div key={participant.id} className="participant-item">
                     <strong>{participant.fullName}</strong>
                     <span>{participant.email}</span>
@@ -78,10 +112,11 @@ const MasterClassDetail = ({ masterClass, onClose }) => {
             </div>
           )}
 
+          {reviewFormSlot}
         </div>
 
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>
+          <button type="button" className="btn-secondary" onClick={onClose}>
             Закрыть
           </button>
         </div>
@@ -91,4 +126,3 @@ const MasterClassDetail = ({ masterClass, onClose }) => {
 };
 
 export default MasterClassDetail;
-
