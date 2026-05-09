@@ -7,12 +7,17 @@ import Index from './pages/Index/Index.js';
 import Contact from './pages/Contact/Contact.js';
 import Our_team from './pages/Our_team/Our_team.js';
 import Service from './pages/Service/Service.js';
+import CatalogPublic from './pages/CatalogPublic/CatalogPublic.js';
+import MasterClassPublicPage from './pages/MasterClassPublicPage/MasterClassPublicPage.js';
+import InstructorPublicPage from './pages/InstructorPublicPage/InstructorPublicPage.js';
 import NotFound from './pages/404/404.js';
 import Instructors from './pages/Admin/Instructors/Instructors.js';
 import Participants from './pages/Admin/Participants/Participants.js';
 import MasterClasses from './pages/Admin/MasterClasses/MasterClasses.js';
 import ContactRequests from './pages/Admin/ContactRequests/ContactRequests.js';
 import AdminPayments from './pages/Admin/Payments/Payments.js';
+import TestBuilder from './pages/Admin/TestBuilder/TestBuilder.js';
+import ScheduleGroups from './pages/Admin/ScheduleGroups/ScheduleGroups.js';
 import LoginPage from './pages/LoginPage/LoginPage.js';
 import RegisterPage from './pages/RegisterPage/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js';
@@ -33,6 +38,9 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/our_team" element={<Our_team />} />
           <Route path="/service" element={<Service />} />
+          <Route path="/masterclass" element={<CatalogPublic />} />
+          <Route path="/masterclass/:id" element={<MasterClassPublicPage />} />
+          <Route path="/instructors/:id" element={<InstructorPublicPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -83,6 +91,22 @@ function App() {
             element={
               <PrivateRoute requireRole="admin">
                 <AdminPayments />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/tests"
+            element={
+              <PrivateRoute requireRole="admin">
+                <TestBuilder />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/groups"
+            element={
+              <PrivateRoute requireRole="admin">
+                <ScheduleGroups />
               </PrivateRoute>
             }
           />
