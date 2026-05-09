@@ -1,5 +1,35 @@
-const { MasterClass, Instructor, Participant, Schedule, Location, Payment } = require('../models');
-const { Op } = require('sequelize');
+const PDFDocument = require('pdfkit');
+const { MasterClass, Instructor, Participant, Schedule, Location, Payment, Review } = require('../models');
+const { Op, Sequelize } = require('sequelize');
+const { resolveUnicodeTtfPath } = require('../utils/pdfFonts');
+
+async function getRatingStatsMap(masterClassIds) {
+  const map = new Map();
+  if (!masterClassIds.length) {
+    return map;
+  }
+
+  const rows = await Review.findAll({
+    attributes: [
+      'masterClassId',
+      [Sequelize.fn('AVG', Sequelize.col('rating')), 'avgRating'],
+      [Sequelize.fn('COUNT', Sequelize.col('Review.id')), 'reviewCount'],
+    ],
+    where: { masterClassId: { [Op.in]: masterClassIds } },
+    group: ['masterClassId'],
+    raw: true,
+  });
+
+  rows.forEach((row) => {
+    const avgRaw = parseFloat(row.avgRating);
+    map.set(row.masterClassId, {
+      avgRating: Number.isNaN(avgRaw) ? null : Math.round(avgRaw * 100) / 100,
+      reviewCount: parseInt(row.reviewCount, 10) || 0,
+    });
+  });
+
+  return map;
+}
 
 exports.getAllMasterClasses = async (req, res) => {
   try {
@@ -15,11 +45,18 @@ exports.getAllMasterClasses = async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    const where = {}; 
+    const where = {};
 
-
-    if (instructorId) {
-      where.instructorId = parseInt(instructorId);
+    if (instructorId !== undefined && instructorId !== null && `${instructorId}`.trim() !== '') {
+      const parts = `${instructorId}`
+        .split(',')
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => !Number.isNaN(n));
+      if (parts.length === 1) {
+        where.instructorId = parts[0];
+      } else if (parts.length > 1) {
+        where.instructorId = { [Op.in]: parts };
+      }
     }
 
     if (minPrice || maxPrice) {
@@ -39,6 +76,10 @@ exports.getAllMasterClasses = async (req, res) => {
       ];
     }
 
+    const allowedSortFields = ['id', 'name', 'price'];
+    const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'name';
+    const orderDir = String(sortOrder).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
     const { count, rows } = await MasterClass.findAndCountAll({
       where,
       include: [
@@ -47,37 +88,43 @@ exports.getAllMasterClasses = async (req, res) => {
           as: 'instructor',
           attributes: ['id', 'fullName', 'specialization'],
         },
+        {
+          model: Schedule,
+          as: 'schedules',
+          separate: true,
+          limit: 1,
+          order: [['startDate', 'ASC']],
+          attributes: ['id', 'startDate', 'endDate'],
+          required: false,
+        },
       ],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10),
+      order: [[validSortBy, orderDir]],
     });
 
+    const ids = rows.map((r) => r.id);
+    const ratingMap = await getRatingStatsMap(ids);
 
-    const masterClassesWithParticipants = await Promise.all(
-      rows.map(async (masterClass) => {
-        const participantIds = masterClass.participantIds || [];
-        const participants = participantIds.length > 0
-          ? await Participant.findAll({
-              where: { id: { [Op.in]: participantIds } },
-              attributes: ['id', 'fullName', 'email', 'phone'],
-            })
-          : [];
-
-        return {
-          ...masterClass.toJSON(),
-          participants,
-        };
-      })
-    );
+    const list = rows.map((masterClass) => {
+      const json = masterClass.toJSON();
+      const st = ratingMap.get(json.id) || { avgRating: null, reviewCount: 0 };
+      const pids = json.participantIds || [];
+      return {
+        ...json,
+        avgRating: st.avgRating,
+        reviewCount: st.reviewCount,
+        participantCount: pids.length,
+      };
+    });
 
     res.json({
       success: true,
-      data: masterClassesWithParticipants,
+      data: list,
       pagination: {
         total: count,
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
         totalPages: Math.ceil(count / limit),
       },
     });
@@ -94,6 +141,8 @@ exports.getAllMasterClasses = async (req, res) => {
 exports.getMasterClassById = async (req, res) => {
   try {
     const { id } = req.params;
+    const isAdmin = req.user && req.user.role === 'admin';
+
     const masterClass = await MasterClass.findByPk(id, {
       include: [
         {
@@ -114,6 +163,19 @@ exports.getMasterClassById = async (req, res) => {
             },
           ],
         },
+        {
+          model: Review,
+          as: 'reviews',
+          separate: true,
+          order: [['createdAt', 'ASC']],
+          include: [
+            {
+              model: Participant,
+              as: 'participant',
+              attributes: ['id', 'fullName'],
+            },
+          ],
+        },
       ],
     });
 
@@ -124,18 +186,40 @@ exports.getMasterClassById = async (req, res) => {
       });
     }
 
+    const agg = await Review.findOne({
+      attributes: [
+        [Sequelize.fn('AVG', Sequelize.col('rating')), 'avgRating'],
+        [Sequelize.fn('COUNT', Sequelize.col('Review.id')), 'cnt'],
+      ],
+      where: { masterClassId: id },
+      raw: true,
+    });
+
+    const avgRaw = agg && agg.avgRating != null ? parseFloat(agg.avgRating) : null;
+    const avgRating = avgRaw != null && !Number.isNaN(avgRaw) ? Math.round(avgRaw * 100) / 100 : null;
+    const reviewCount = agg && agg.cnt != null ? parseInt(agg.cnt, 10) : 0;
+
     const participantIds = masterClass.participantIds || [];
-    const participants = participantIds.length > 0
-      ? await Participant.findAll({
-          where: { id: { [Op.in]: participantIds } },
-          attributes: ['id', 'fullName', 'email', 'phone'],
-        })
-      : [];
+    let participants = [];
+    if (isAdmin && participantIds.length > 0) {
+      participants = await Participant.findAll({
+        where: { id: { [Op.in]: participantIds } },
+        attributes: ['id', 'fullName', 'email', 'phone'],
+      });
+    }
+
+    const base = masterClass.toJSON();
+    if (!isAdmin) {
+      delete base.participantIds;
+    }
 
     res.json({
       success: true,
       data: {
-        ...masterClass.toJSON(),
+        ...base,
+        avgRating,
+        reviewCount,
+        participantCount: participantIds.length,
         participants,
       },
     });
@@ -484,5 +568,89 @@ exports.getParticipantMasterClasses = async (req, res) => {
       message: 'Ошибка при получении мастер-классов участника',
       error: error.message,
     });
+  }
+};
+
+exports.exportMyClassesPdf = async (req, res) => {
+  try {
+    const participantId = req.user.id;
+
+    const masterClasses = await MasterClass.findAll({
+      where: {
+        participantIds: {
+          [Op.contains]: [participantId],
+        },
+      },
+      include: [
+        {
+          model: Instructor,
+          as: 'instructor',
+          attributes: ['fullName'],
+        },
+      ],
+      order: [['id', 'ASC']],
+    });
+
+    const mcIds = masterClasses.map((m) => m.id);
+    const schedules = mcIds.length
+      ? await Schedule.findAll({
+          where: { masterClassId: { [Op.in]: mcIds } },
+          order: [['startDate', 'ASC']],
+        })
+      : [];
+
+    const firstDateByMc = {};
+    schedules.forEach((s) => {
+      if (firstDateByMc[s.masterClassId] == null) {
+        firstDateByMc[s.masterClassId] = s.startDate;
+      }
+    });
+
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="moi-master-klassy.pdf"'
+    );
+    doc.pipe(res);
+
+    const fontPath = resolveUnicodeTtfPath();
+    if (fontPath) {
+      doc.font(fontPath);
+    }
+
+    doc.fontSize(16).text('Мои мастер-классы', { align: 'center' });
+    doc.moveDown();
+
+    if (masterClasses.length === 0) {
+      doc.fontSize(11).text('Нет записей.');
+      doc.end();
+      return;
+    }
+
+    doc.fontSize(10);
+    masterClasses.forEach((mc, i) => {
+      const dateStr = firstDateByMc[mc.id]
+        ? new Date(firstDateByMc[mc.id]).toLocaleString('ru-RU')
+        : '—';
+      doc.text(
+        `${i + 1}. ${mc.name}`,
+        { continued: false }
+      );
+      doc.text(
+        `   Инструктор: ${mc.instructor?.fullName || '—'} | Дата (ближайший сеанс): ${dateStr} | Цена: ${parseFloat(mc.price).toFixed(2)} ₽`
+      );
+      doc.moveDown(0.5);
+    });
+
+    doc.end();
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Ошибка при формировании PDF',
+        error: error.message,
+      });
+    }
   }
 };
