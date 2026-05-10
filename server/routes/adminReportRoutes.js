@@ -10,4 +10,11 @@ router.get(
   adminReportsController.scheduleParticipantsReport
 );
 
+router.get(
+  '/payments/period',
+  verifyToken,
+  requireAdmin,
+  adminReportsController.paymentsFinanceReport
+);
+
 module.exports = router;
