@@ -97,6 +97,9 @@ const Header = () => {
           <NavLink to="/admin/payments" className="hn_link_admin" end>
             Счета
           </NavLink>
+          <NavLink to="/admin/reports" className="hn_link_admin" end>
+            Отчёт по сеансу
+          </NavLink>
           <NavLink to="/admin/tests" className="hn_link_admin" end>
             Тесты (админ)
           </NavLink>
