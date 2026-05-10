@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { masterClassService } from '../../services/masterClassService';
+import { reviewService } from '../../services/reviewService';
 import { authUtils } from '../../utils/auth';
 import './MasterClassPublicPage.css';
 
@@ -11,6 +12,11 @@ const MasterClassPublicPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [formMessage, setFormMessage] = useState(null);
+  const [formError, setFormError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,6 +35,38 @@ const MasterClassPublicPage = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setFormMessage(null);
+    setFormError(null);
+    setComment('');
+    setRating(5);
+  }, [id]);
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    setFormMessage(null);
+    setFormError(null);
+    setSubmittingReview(true);
+    try {
+      await reviewService.create({
+        masterClassId: Number(id),
+        rating: Number(rating),
+        comment: comment.trim() ? comment.trim() : null,
+      });
+      setFormMessage('Спасибо, отзыв опубликован.');
+      setComment('');
+      await load();
+    } catch (err) {
+      setFormError(
+        err.response?.data?.message ||
+          err.message ||
+          'Не удалось отправить отзыв'
+      );
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const user = authUtils.getUser();
   const isParticipant = authUtils.isLoggedIn() && user.role === 'participant';
@@ -107,6 +145,9 @@ const MasterClassPublicPage = () => {
         )}
         <section className="mc-public-section">
           <h2>Отзывы</h2>
+          {data.viewerHasReview && isParticipant && (
+            <p className="mc-public-review-hint">Вы уже оставили отзыв об этом мастер-классе.</p>
+          )}
           {reviews.length === 0 && <p>Пока нет отзывов.</p>}
           {reviews.length > 0 && (
             <ul className="mc-public-reviews">
@@ -117,6 +158,59 @@ const MasterClassPublicPage = () => {
                 </li>
               ))}
             </ul>
+          )}
+          {data.viewerCanSubmitReview && (
+            <form className="mc-public-review-form" onSubmit={handleSubmitReview}>
+              <h3 className="mc-public-review-form-title">Оставить отзыв</h3>
+              <p className="mc-public-review-hint">
+                Доступно, потому что вы записаны на этот мастер-класс.
+              </p>
+              {formMessage && (
+                <p className="mc-public-review-success" role="status">
+                  {formMessage}
+                </p>
+              )}
+              {formError && <p className="error-message">{formError}</p>}
+              <label className="mc-public-review-label">
+                Оценка
+                <select
+                  className="mc-public-review-input"
+                  value={rating}
+                  onChange={(e) => setRating(Number(e.target.value))}
+                  disabled={submittingReview}
+                >
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>
+                      {n} ★
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="mc-public-review-label">
+                Комментарий
+                <textarea
+                  className="mc-public-review-textarea"
+                  rows={4}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="По желанию"
+                  disabled={submittingReview}
+                  maxLength={2000}
+                />
+              </label>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={submittingReview}
+              >
+                {submittingReview ? 'Отправка…' : 'Отправить отзыв'}
+              </button>
+            </form>
+          )}
+          {isParticipant && !data.viewerHasEnrollment && (
+            <p className="mc-public-review-hint">
+              После записи на мастер-класс здесь появится форма отзыва.
+            </p>
           )}
         </section>
         <div className="mc-public-actions">

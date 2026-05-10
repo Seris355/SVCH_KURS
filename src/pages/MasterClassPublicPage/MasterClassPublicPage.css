@@ -43,6 +43,53 @@
   padding: 0.75rem 0;
 }
 
+.mc-public-review-hint {
+  font-size: 0.95rem;
+  color: rgba(0, 0, 0, 0.65);
+  margin: 0.5rem 0 1rem;
+}
+
+.mc-public-review-form {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  max-width: 520px;
+}
+
+.mc-public-review-form-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.mc-public-review-success {
+  color: #15803d;
+  margin: 0 0 0.75rem;
+}
+
+.mc-public-review-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.mc-public-review-input,
+.mc-public-review-textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.mc-public-review-textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
 .mc-public-actions {
   margin-top: 2rem;
   display: flex;
