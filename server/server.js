@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
+const { startSessionReminderCron } = require('./cron/startSessionReminderCron');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -38,12 +39,11 @@ app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/favorites', require('./routes/favoriteRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
+
 app.use('/api/admin/reports', require('./routes/adminReportRoutes'));
 app.use('/api/admin/analytics', require('./routes/adminAnalyticsRoutes'));
 app.use('/api/admin/reminders', require('./routes/adminReminderRoutes'));
 
-
-const { startSessionReminderCron } = require('./cron/startSessionReminderCron');
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
@@ -51,4 +51,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-
