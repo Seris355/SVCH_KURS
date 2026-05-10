@@ -37,11 +37,13 @@ export const participantService = {
     return response.data;
   },
 
+  
   changePassword: async (id, password) => {
     const response = await api.put(`/participants/${id}/password`, { password });
     return response.data;
   },
 
+  
   exportParticipantsPdf: async (params = {}) => {
     const response = await api.get('/participants/export/pdf', {
       params,

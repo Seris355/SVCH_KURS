@@ -37,16 +37,19 @@ export const masterClassService = {
     return response.data;
   },
 
+  
   enroll: async (id, payload = {}) => {
     const response = await api.post(`/masterclasses/${id}/enroll`, payload);
     return response.data;
   },
 
+  
   getMyClasses: async () => {
     const response = await api.get('/masterclasses/my-classes');
     return response.data;
   },
 
+  
   exportMyClassesPdf: async () => {
     const response = await api.get('/masterclasses/my-classes/export-pdf', {
       responseType: 'blob',
