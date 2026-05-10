@@ -72,6 +72,8 @@
   max-width: 320px;
   transition: transform var(--transition-normal);
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
 .product_card:hover {
@@ -104,6 +106,99 @@
 
 .logos_partners:hover, .logo_p:hover {
   transform: scale(1.05);
+}
+
+.home-masterclass-preview {
+  margin-top: var(--spacing-2xl);
+  padding: 0 var(--spacing-md);
+  max-width: var(--max-width-content, 1100px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-masterclass-preview .container {
+  max-width: 100%;
+}
+
+.home-mc-heading {
+  font-size: var(--font-size-3xl);
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.home-mc-status {
+  text-align: center;
+  color: var(--color-text-secondary, #666);
+}
+
+.home-mc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.home-mc-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+  background: var(--color-bg-primary, #fff);
+  transition: transform var(--transition-normal, 0.2s), box-shadow var(--transition-normal, 0.2s);
+}
+
+.home-mc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+}
+
+.home-mc-photo {
+  width: 100%;
+  max-height: 140px;
+  overflow: hidden;
+}
+
+.home-mc-photo img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+  max-height: 140px;
+}
+
+.home-mc-title {
+  font-size: var(--font-size-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: 0;
+}
+
+.home-mc-meta,
+.home-mc-price {
+  padding: 0 var(--spacing-md);
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary, #555);
+}
+
+.home-mc-price {
+  font-weight: 600;
+  color: inherit;
+}
+
+.home-mc-footer {
+  margin-top: var(--spacing-xl);
+  text-align: center;
+}
+
+.home-mc-catalog-link {
+  font-weight: 600;
+}
+
+.home-mc-sep {
+  margin: 0 var(--spacing-sm);
+  opacity: 0.5;
 }
 
 
