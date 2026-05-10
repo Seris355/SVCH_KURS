@@ -208,6 +208,25 @@ exports.getMasterClassById = async (req, res) => {
       });
     }
 
+    let viewerHasEnrollment = false;
+    let viewerHasReview = false;
+    let viewerCanSubmitReview = false;
+    if (req.user && req.user.role === 'participant') {
+      const pid = req.user.id;
+      viewerHasEnrollment = participantIds.includes(pid);
+      if (viewerHasEnrollment) {
+        const existingReview = await Review.findOne({
+          where: {
+            participantId: pid,
+            masterClassId: parseInt(id, 10),
+          },
+          attributes: ['id'],
+        });
+        viewerHasReview = !!existingReview;
+        viewerCanSubmitReview = !existingReview;
+      }
+    }
+
     const base = masterClass.toJSON();
     if (!isAdmin) {
       delete base.participantIds;
@@ -221,6 +240,9 @@ exports.getMasterClassById = async (req, res) => {
         reviewCount,
         participantCount: participantIds.length,
         participants,
+        viewerHasEnrollment,
+        viewerHasReview,
+        viewerCanSubmitReview,
       },
     });
   } catch (error) {
