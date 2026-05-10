@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from '../../components/Header/Header';
-import Footer from '../../components/Footer/Footer';
-import { scheduleService } from '../../services/scheduleService';
-import { reportService } from '../../services/reportService';
+import Header from '../../../components/Header/Header';
+import Footer from '../../../components/Footer/Footer';
+import { scheduleService } from '../../../services/scheduleService';
+import { reportService } from '../../../services/reportService';
 import '../ContactRequests/ContactRequests.css';
 
 const formatDt = (iso) => {
