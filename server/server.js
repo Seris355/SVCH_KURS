@@ -40,10 +40,14 @@ app.use('/api/favorites', require('./routes/favoriteRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/admin/reports', require('./routes/adminReportRoutes'));
 app.use('/api/admin/analytics', require('./routes/adminAnalyticsRoutes'));
+app.use('/api/admin/reminders', require('./routes/adminReminderRoutes'));
 
+
+const { startSessionReminderCron } = require('./cron/startSessionReminderCron');
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  startSessionReminderCron();
 });
 
 module.exports = app;
