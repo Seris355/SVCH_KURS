@@ -41,4 +41,20 @@ export const participantService = {
     const response = await api.put(`/participants/${id}/password`, { password });
     return response.data;
   },
+
+  exportParticipantsPdf: async (params = {}) => {
+    const response = await api.get('/participants/export/pdf', {
+      params,
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'uchastniki.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

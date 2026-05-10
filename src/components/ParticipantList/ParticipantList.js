@@ -16,6 +16,7 @@ const ParticipantList = ({
   onAdd,
   itemsPerPage,
   onItemsPerPageChange,
+  onExportPdf,
 }) => {
   if (loading) {
     return <div className="loading">Загрузка...</div>;
@@ -104,10 +105,16 @@ const ParticipantList = ({
           )}
           {onResetFilters && (
             <button
+              type="button"
               className="btn-secondary"
               onClick={onResetFilters}
             >
               Сбросить
+            </button>
+          )}
+          {onExportPdf && (
+            <button type="button" className="btn-secondary" onClick={onExportPdf}>
+              Экспорт PDF
             </button>
           )}
         </div>

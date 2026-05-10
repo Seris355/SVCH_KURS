@@ -38,6 +38,8 @@ const Participants = () => {
     search: '',
     email: '',
     phone: '',
+    sortBy: 'id',
+    sortOrder: 'ASC',
   });
   
   const [inputFilters, setInputFilters] = useState(filters);
@@ -50,6 +52,8 @@ const Participants = () => {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
         ...filters,
       };
       
@@ -134,6 +138,22 @@ const Participants = () => {
     }
   };
 
+  const handleExportPdf = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await participantService.exportParticipantsPdf({
+        search: filters.search || undefined,
+        email: filters.email || undefined,
+        phone: filters.phone || undefined,
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Ошибка экспорта PDF');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ⬇️ СОЗДАНИЕ/ОБНОВЛЕНИЕ - ЗАПРОС НАПРЯМУЮ
   const handleFormSubmit = async (data) => {
     try {
@@ -166,6 +186,8 @@ const Participants = () => {
       search: '',
       email: '',
       phone: '',
+      sortBy: 'id',
+      sortOrder: 'ASC',
     };
     setInputFilters(defaultFilters);
     setFilters(defaultFilters);
@@ -216,6 +238,7 @@ const Participants = () => {
             onAdd={handleCreate}
             itemsPerPage={itemsPerPage}
             onItemsPerPageChange={handleItemsPerPageChange}
+            onExportPdf={handleExportPdf}
           />
 
           {showForm && (
