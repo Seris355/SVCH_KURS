@@ -52,6 +52,28 @@
   transition: transform var(--transition-normal);
 }
 
+.master-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.master-card-more {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent-primary);
+  margin-top: var(--spacing-xs);
+}
+
+.our-team-error {
+  text-align: center;
+  color: #c62828;
+}
+
+.our-team-loading {
+  text-align: center;
+}
+
 .master_container:hover {
   transform: translateY(-8px);
 }
