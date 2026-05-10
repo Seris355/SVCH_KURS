@@ -17,6 +17,9 @@ const MasterClassPublicPage = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [formMessage, setFormMessage] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [enrollDialog, setEnrollDialog] = useState(null);
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,6 +44,8 @@ const MasterClassPublicPage = () => {
     setFormError(null);
     setComment('');
     setRating(5);
+    setEnrollDialog(null);
+    setEnrollError(null);
   }, [id]);
 
   const handleSubmitReview = async (e) => {
@@ -70,6 +75,44 @@ const MasterClassPublicPage = () => {
 
   const user = authUtils.getUser();
   const isParticipant = authUtils.isLoggedIn() && user.role === 'participant';
+
+  const openEnrollModal = () => {
+    if (!data) return;
+    const now = new Date();
+    const upcoming = (data.schedules || []).filter((s) => new Date(s.startDate) > now);
+    if (upcoming.length === 0) {
+      setEnrollError(
+        'Нет будущих сеансов для онлайн-записи. Попробуйте позже или откройте каталог в личном кабинете.'
+      );
+      return;
+    }
+    setEnrollError(null);
+    setEnrollDialog({
+      schedules: upcoming,
+      selectedScheduleId: upcoming[0].id,
+    });
+  };
+
+  const handleConfirmEnroll = async () => {
+    if (!enrollDialog) return;
+    setEnrolling(true);
+    setEnrollError(null);
+    try {
+      await masterClassService.enroll(Number(id), {
+        scheduleId: enrollDialog.selectedScheduleId,
+      });
+      setEnrollDialog(null);
+      await load();
+    } catch (err) {
+      setEnrollError(
+        err.response?.data?.message ||
+          err.message ||
+          'Не удалось выполнить запись'
+      );
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -213,12 +256,13 @@ const MasterClassPublicPage = () => {
             </p>
           )}
         </section>
+        {enrollError && !enrollDialog && (
+          <p className="error-message" role="alert">
+            {enrollError}
+          </p>
+        )}
         <div className="mc-public-actions">
-          {isParticipant ? (
-            <Link className="btn-primary" to="/participant/classes">
-              Записаться в личном кабинете
-            </Link>
-          ) : (
+          {!isParticipant ? (
             <>
               <Link className="btn-primary" to="/login">
                 Войти для записи
@@ -227,8 +271,94 @@ const MasterClassPublicPage = () => {
                 Регистрация
               </Link>
             </>
+          ) : data.viewerHasEnrollment ? (
+            <>
+              <span className="mc-public-review-hint" style={{ width: '100%', marginBottom: '0.25rem' }}>
+                Вы уже записаны на этот мастер-класс.
+              </span>
+              <Link className="btn-primary" to="/participant/classes">
+                Мои мастер-классы
+              </Link>
+            </>
+          ) : (
+            <>
+              <button type="button" className="btn-primary" onClick={openEnrollModal}>
+                Записаться
+              </button>
+              <Link className="btn-secondary" to="/participant/classes">
+                Расширенный каталог и фильтры в кабинете
+              </Link>
+            </>
           )}
         </div>
+
+        {enrollDialog && (
+          <div
+            className="mc-public-enroll-overlay"
+            role="presentation"
+            onClick={() => !enrolling && setEnrollDialog(null)}
+          >
+            <div
+              className="mc-public-enroll-box"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mc-enroll-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 id="mc-enroll-title" className="mc-public-enroll-title">
+                Выберите сеанс
+              </h2>
+              <p>{data.name}</p>
+              {enrollError && enrollDialog && (
+                <p className="error-message">{enrollError}</p>
+              )}
+              <label htmlFor="mc-public-enroll-schedule" className="mc-public-enroll-label">
+                Дата и место
+              </label>
+              <select
+                id="mc-public-enroll-schedule"
+                className="mc-public-enroll-select"
+                value={enrollDialog.selectedScheduleId}
+                disabled={enrolling}
+                onChange={(e) =>
+                  setEnrollDialog((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          selectedScheduleId: Number(e.target.value),
+                        }
+                      : prev
+                  )
+                }
+              >
+                {enrollDialog.schedules.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {new Date(s.startDate).toLocaleString('ru-RU')}
+                    {s.location?.name ? ` — ${s.location.name}` : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="mc-public-enroll-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={enrolling}
+                  onClick={() => setEnrollDialog(null)}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={enrolling}
+                  onClick={handleConfirmEnroll}
+                >
+                  {enrolling ? 'Подождите…' : 'Записаться и получить счёт'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>
