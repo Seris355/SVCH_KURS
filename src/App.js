@@ -18,6 +18,7 @@ import ContactRequests from './pages/Admin/ContactRequests/ContactRequests.js';
 import AdminPayments from './pages/Admin/Payments/Payments.js';
 import TestBuilder from './pages/Admin/TestBuilder/TestBuilder.js';
 import ScheduleGroups from './pages/Admin/ScheduleGroups/ScheduleGroups.js';
+import AdminReports from './pages/Admin/Reports/AdminReports.js';
 import LoginPage from './pages/LoginPage/LoginPage.js';
 import RegisterPage from './pages/RegisterPage/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js';
@@ -107,6 +108,14 @@ function App() {
             element={
               <PrivateRoute requireRole="admin">
                 <ScheduleGroups />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <PrivateRoute requireRole="admin">
+                <AdminReports />
               </PrivateRoute>
             }
           />
