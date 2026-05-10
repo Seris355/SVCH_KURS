@@ -39,6 +39,7 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/favorites', require('./routes/favoriteRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/admin/reports', require('./routes/adminReportRoutes'));
+app.use('/api/admin/analytics', require('./routes/adminAnalyticsRoutes'));
 
 
 app.listen(PORT, () => {
