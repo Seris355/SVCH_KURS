@@ -103,6 +103,9 @@ const Header = () => {
           <NavLink to="/admin/analytics" className="hn_link_admin" end>
             Аналитика
           </NavLink>
+          <NavLink to="/admin/reminders" className="hn_link_admin" end>
+            Напоминания
+          </NavLink>
           <NavLink to="/admin/tests" className="hn_link_admin" end>
             Тесты (админ)
           </NavLink>

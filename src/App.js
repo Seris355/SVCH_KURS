@@ -20,6 +20,7 @@ import TestBuilder from './pages/Admin/TestBuilder/TestBuilder.js';
 import ScheduleGroups from './pages/Admin/ScheduleGroups/ScheduleGroups.js';
 import AdminReports from './pages/Admin/Reports/AdminReports.js';
 import AdminAnalytics from './pages/Admin/Analytics/AdminAnalytics.js';
+import AdminReminders from './pages/Admin/Reminders/AdminReminders.js';
 import LoginPage from './pages/LoginPage/LoginPage.js';
 import RegisterPage from './pages/RegisterPage/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js';
@@ -125,6 +126,14 @@ function App() {
             element={
               <PrivateRoute requireRole="admin">
                 <AdminAnalytics />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/reminders"
+            element={
+              <PrivateRoute requireRole="admin">
+                <AdminReminders />
               </PrivateRoute>
             }
           />
