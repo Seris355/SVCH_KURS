@@ -52,6 +52,14 @@ header {
   text-decoration: none;
 }
 
+button.hn_link {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
 .hn_link:hover {
   color: var(--color-accent-primary);
 }

@@ -20,8 +20,13 @@ const Footer = () => {
           <p>С 11:00 до 20:00 (Сб-Вс)</p>
         </div>
         <div className="footer_inst">
-          <a href="#">
-            <img src="/images/images_foote_header/insta2.svg" alt="Instagram" />
+          <a
+            href="https://www.instagram.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+          >
+            <img src="/images/images_foote_header/insta2.svg" alt="" />
           </a>
         </div>
       </div>
