@@ -18,7 +18,6 @@ const Test = require('./Test');
 const Question = require('./Question');
 const Answer = require('./Answer');
 const TestResult = require('./TestResult');
-const ScheduleReminderLog = require('./ScheduleReminderLog');
 
 // Instructor <-> MasterClass
 Instructor.hasMany(MasterClass, {
@@ -142,26 +141,6 @@ Payment.belongsTo(Participant, {
   as: 'participant',
 });
 
-Participant.hasMany(ScheduleReminderLog, {
-  foreignKey: 'participantId',
-  as: 'scheduleReminderLogs',
-  onDelete: 'CASCADE',
-});
-ScheduleReminderLog.belongsTo(Participant, {
-  foreignKey: 'participantId',
-  as: 'participant',
-});
-
-Schedule.hasMany(ScheduleReminderLog, {
-  foreignKey: 'scheduleId',
-  as: 'scheduleReminderLogs',
-  onDelete: 'CASCADE',
-});
-ScheduleReminderLog.belongsTo(Schedule, {
-  foreignKey: 'scheduleId',
-  as: 'schedule',
-});
-
 // Participant <-> MasterClass (favorites)
 Participant.belongsToMany(MasterClass, {
   through: Favorite,
@@ -250,5 +229,4 @@ module.exports = {
   Question,
   Answer,
   TestResult,
-  ScheduleReminderLog,
 };
