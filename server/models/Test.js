@@ -12,7 +12,7 @@ const Test = sequelize.define('Test', {
     allowNull: false,
     validate: {
       notEmpty: { msg: 'Название теста не может быть пустым' },
-      len: { args: [2, 200], msg: 'Название теста от 2 до 200 символов' },
+      len: { args: [2, 200], msg: 'Название от 2 до 200 символов' },
     },
   },
   description: {

@@ -19,11 +19,6 @@ const Favorite = sequelize.define('Favorite', {
     references: { model: 'masterclasses', key: 'id' },
     onDelete: 'CASCADE',
   },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
 }, {
   tableName: 'favorites',
   timestamps: false,

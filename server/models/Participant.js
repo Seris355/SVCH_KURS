@@ -76,7 +76,8 @@ const Participant = sequelize.define('Participant', {
   },
 }, {
   tableName: 'participants',
-  timestamps: false,
+  timestamps: true,
+  updatedAt: false,
 });
 
 module.exports = Participant;
