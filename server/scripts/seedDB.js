@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const {
   sequelize,
   Instructor,
@@ -398,7 +399,12 @@ async function seedDatabase() {
     console.log(`✓ Создано ${schedules.length} сеансов расписания\n`);
 
     console.log('Создание оплат...');
-    const payments = await Payment.bulkCreate(paymentsData);
+    const payments = await Payment.bulkCreate(
+      paymentsData.map((payment, index) => ({
+        ...payment,
+        invoiceCode: `DB-SEED-${String(index + 1).padStart(4, '0')}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+      }))
+    );
     console.log(`✓ Создано ${payments.length} записей об оплате\n`);
 
     console.log('Создание отзывов...');
