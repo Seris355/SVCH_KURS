@@ -10,35 +10,27 @@ import './Instructors.css';
 
 const Instructors = () => {
   const dispatch = useAppDispatch();
-  
-  // ⬇️ НАСТРОЙКИ ИЗ REDUX
-  const { itemsPerPage } = useAppSelector(
-    (state) => state.userSettings
-  );
+  const { itemsPerPage } = useAppSelector((state) => state.userSettings);
 
-  // ⬇️ ДАННЫЕ ИЗ БД - В ЛОКАЛЬНОМ СОСТОЯНИИ
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState(null);
-  
-  // ⬇️ ПАГИНАЦИЯ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
-  
-  // ⬇️ ФИЛЬТРЫ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
+
   const [filters, setFilters] = useState({
     search: '',
     specialization: '',
   });
-  
+
   const [inputFilters, setInputFilters] = useState(filters);
 
-  // ⬇️ ЗАГРУЗКА ДАННЫХ НАПРЯМУЮ ЧЕРЕЗ СЕРВИС
   const loadInstructors = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -48,10 +40,9 @@ const Instructors = () => {
         limit: itemsPerPage,
         ...filters,
       };
-      
-      // ⬇️ ЗАПРОС НАПРЯМУЮ, БЕЗ REDUX
+
       const response = await instructorService.getAll(params);
-      
+
       setInstructors(response.data || []);
       setPagination({
         total: response.pagination?.total || 0,
@@ -64,12 +55,9 @@ const Instructors = () => {
     }
   }, [currentPage, filters, itemsPerPage]);
 
-  // Загружаем при изменении страницы, фильтров или itemsPerPage
   useEffect(() => {
     loadInstructors();
   }, [loadInstructors]);
-
-  // Обновляем локальные фильтры при изменении настроек из Redux
 
   const handleCreate = () => {
     setEditingInstructor(null);
@@ -81,13 +69,12 @@ const Instructors = () => {
     setShowForm(true);
   };
 
-  // ⬇️ УДАЛЕНИЕ - ЗАПРОС НАПРЯМУЮ
   const handleDelete = async (id) => {
     if (window.confirm('Вы уверены, что хотите удалить этого инструктора?')) {
       try {
         setLoading(true);
-        await instructorService.delete(id); // ⬅️ НАПРЯМУЮ
-        await loadInstructors(); // Перезагружаем список
+        await instructorService.delete(id);
+        await loadInstructors();
       } catch (err) {
         alert(err.message || 'Ошибка при удалении инструктора');
       } finally {
@@ -101,17 +88,16 @@ const Instructors = () => {
     setEditingInstructor(null);
   };
 
-  // ⬇️ СОЗДАНИЕ/ОБНОВЛЕНИЕ - ЗАПРОС НАПРЯМУЮ
   const handleFormSubmit = async (data) => {
     try {
       setLoading(true);
       if (editingInstructor) {
-        await instructorService.update(editingInstructor.id, data); // ⬅️ НАПРЯМУЮ
+        await instructorService.update(editingInstructor.id, data);
       } else {
-        await instructorService.create(data); // ⬅️ НАПРЯМУЮ
+        await instructorService.create(data);
       }
       handleCloseForm();
-      await loadInstructors(); // Перезагружаем список
+      await loadInstructors();
     } catch (err) {
       throw err;
     } finally {
@@ -120,12 +106,12 @@ const Instructors = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters(prev => ({ ...prev, [field]: value }));
+    setInputFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSearch = () => {
     setFilters(inputFilters);
-    setCurrentPage(1); // Сбрасываем на первую страницу
+    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
@@ -142,15 +128,13 @@ const Instructors = () => {
     setCurrentPage(newPage);
   };
 
-  // ⬇️ ИЗМЕНЕНИЕ НАСТРОЕК (сохраняем в Redux)
   const handleItemsPerPageChange = (value) => {
     const numValue = parseInt(value, 10);
     if (numValue > 0 && numValue <= 100) {
       dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1); // Сбрасываем на первую страницу
+      setCurrentPage(1);
     }
   };
-
 
   return (
     <div>

@@ -11,38 +11,30 @@ import './MasterClasses.css';
 
 const MasterClasses = () => {
   const dispatch = useAppDispatch();
-  
-  // ⬇️ НАСТРОЙКИ ИЗ REDUX
-  const { itemsPerPage } = useAppSelector(
-    (state) => state.userSettings
-  );
+  const { itemsPerPage } = useAppSelector((state) => state.userSettings);
 
-  // ⬇️ ДАННЫЕ ИЗ БД - В ЛОКАЛЬНОМ СОСТОЯНИИ
   const [masterClasses, setMasterClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingMasterClass, setEditingMasterClass] = useState(null);
   const [selectedMasterClass, setSelectedMasterClass] = useState(null);
-  
-  // ⬇️ ПАГИНАЦИЯ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
-  
-  // ⬇️ ФИЛЬТРЫ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
+
   const [filters, setFilters] = useState({
     search: '',
     instructorId: '',
     minPrice: '',
     maxPrice: '',
   });
-  
+
   const [inputFilters, setInputFilters] = useState(filters);
 
-  // ⬇️ ЗАГРУЗКА ДАННЫХ НАПРЯМУЮ ЧЕРЕЗ СЕРВИС
   const loadMasterClasses = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -50,14 +42,11 @@ const MasterClasses = () => {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, v]) => v !== '')
-        ),
+        ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '')),
       };
-      
-      // ⬇️ ЗАПРОС НАПРЯМУЮ, БЕЗ REDUX
+
       const response = await masterClassService.getAll(params);
-      
+
       setMasterClasses(response.data || []);
       setPagination({
         total: response.pagination?.total || 0,
@@ -70,11 +59,9 @@ const MasterClasses = () => {
     }
   }, [currentPage, filters, itemsPerPage]);
 
-  // Загружаем при изменении страницы, фильтров или itemsPerPage
   useEffect(() => {
     loadMasterClasses();
   }, [loadMasterClasses]);
-
 
   const handleCreate = () => {
     setEditingMasterClass(null);
@@ -86,13 +73,12 @@ const MasterClasses = () => {
     setShowForm(true);
   };
 
-  // ⬇️ УДАЛЕНИЕ - ЗАПРОС НАПРЯМУЮ
   const handleDelete = async (id) => {
     if (window.confirm('Вы уверены, что хотите удалить этот мастер-класс?')) {
       try {
         setLoading(true);
-        await masterClassService.delete(id); // ⬅️ НАПРЯМУЮ
-        await loadMasterClasses(); // Перезагружаем список
+        await masterClassService.delete(id);
+        await loadMasterClasses();
       } catch (err) {
         alert(err.message || 'Ошибка при удалении мастер-класса');
       } finally {
@@ -101,13 +87,12 @@ const MasterClasses = () => {
     }
   };
 
-  // ⬇️ ПРОСМОТР ДЕТАЛЕЙ - ЗАПРОС НАПРЯМУЮ
   const handleView = async (masterClass) => {
     try {
       setLoading(true);
-      const response = await masterClassService.getById(masterClass.id); // ⬅️ НАПРЯМУЮ
+      const response = await masterClassService.getById(masterClass.id);
       setSelectedMasterClass(response.data);
-    } catch (err) {
+    } catch {
       alert('Ошибка при загрузке детальной информации');
     } finally {
       setLoading(false);
@@ -123,17 +108,16 @@ const MasterClasses = () => {
     setSelectedMasterClass(null);
   };
 
-  // ⬇️ СОЗДАНИЕ/ОБНОВЛЕНИЕ - ЗАПРОС НАПРЯМУЮ
   const handleFormSubmit = async (data) => {
     try {
       setLoading(true);
       if (editingMasterClass) {
-        await masterClassService.update(editingMasterClass.id, data); // ⬅️ НАПРЯМУЮ
+        await masterClassService.update(editingMasterClass.id, data);
       } else {
-        await masterClassService.create(data); // ⬅️ НАПРЯМУЮ
+        await masterClassService.create(data);
       }
       handleCloseForm();
-      await loadMasterClasses(); // Перезагружаем список
+      await loadMasterClasses();
     } catch (err) {
       throw err;
     } finally {
@@ -142,12 +126,12 @@ const MasterClasses = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters(prev => ({ ...prev, [field]: value }));
+    setInputFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSearch = () => {
     setFilters(inputFilters);
-    setCurrentPage(1); // Сбрасываем на первую страницу
+    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
@@ -166,15 +150,13 @@ const MasterClasses = () => {
     setCurrentPage(newPage);
   };
 
-  // ⬇️ ИЗМЕНЕНИЕ НАСТРОЕК (сохраняем в Redux)
   const handleItemsPerPageChange = (value) => {
     const numValue = parseInt(value, 10);
     if (numValue > 0 && numValue <= 100) {
       dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1); // Сбрасываем на первую страницу
+      setCurrentPage(1);
     }
   };
-
 
   return (
     <div>
