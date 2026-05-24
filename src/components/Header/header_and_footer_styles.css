@@ -172,6 +172,12 @@ button.hn_link {
   color: var(--color-accent-secondary);
 }
 
+.admin-nav-badge {
+  margin-left: 0.35rem;
+  color: var(--color-accent-primary);
+  font-weight: 700;
+}
+
 .logo_header {
   display: inline-block;
   transition: transform var(--transition-normal);

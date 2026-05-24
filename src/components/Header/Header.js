@@ -1,12 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { authUtils } from '../../utils/auth';
+import { contactService } from '../../services/contactService';
 import './header_and_footer_styles.css';
 
 const Header = () => {
   const navigate = useNavigate();
   const user = authUtils.getUser();
   const isLoggedIn = authUtils.isLoggedIn();
+  const [unreadContactCount, setUnreadContactCount] = useState(0);
+
+  useEffect(() => {
+    if (!isLoggedIn || user.role !== 'admin') {
+      setUnreadContactCount(0);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const loadUnread = async () => {
+      try {
+        const res = await contactService.getUnreadCount();
+        if (!cancelled) {
+          setUnreadContactCount(res.data?.count || 0);
+        }
+      } catch {
+        if (!cancelled) setUnreadContactCount(0);
+      }
+    };
+
+    loadUnread();
+    const timer = window.setInterval(loadUnread, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [isLoggedIn, user.role]);
 
   const handleLogout = () => {
     authUtils.logout();
@@ -54,9 +82,9 @@ const Header = () => {
                   </NavLink>
                 </>
               )}
-              <a onClick={handleLogout} className="hn_link">
+              <button type="button" onClick={handleLogout} className="hn_link">
                 Выйти
-              </a>
+              </button>
             </>
           )}
           {!isLoggedIn && (
@@ -93,6 +121,9 @@ const Header = () => {
           </NavLink>
           <NavLink to="/admin/contact-requests" className="hn_link_admin" end>
             Обращения
+            {unreadContactCount > 0 && (
+              <span className="admin-nav-badge">({unreadContactCount})</span>
+            )}
           </NavLink>
           <NavLink to="/admin/payments" className="hn_link_admin" end>
             Счета
