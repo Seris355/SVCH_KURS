@@ -194,10 +194,11 @@ const ContactRequests = () => {
               ) : (
                 <>
                   <div className="contact-chat-admin-head">
-                    <div>
+                    <button type="button" className="contact-chat-participant-card">
                       <h2>{participant?.fullName || 'Участник'}</h2>
-                      <p>{participant?.email}</p>
-                    </div>
+                      <span>{participant?.email || 'Email не указан'}</span>
+                      <span>{participant?.phone || 'Телефон не указан'}</span>
+                    </button>
                   </div>
 
                   <div className="contact-chat-admin-messages">

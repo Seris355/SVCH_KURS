@@ -184,13 +184,40 @@ main.page-container {
   background: var(--color-bg-muted);
 }
 
-.contact-chat-admin-head h2,
-.contact-chat-admin-head p {
-  margin: 0;
+.contact-chat-participant-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, auto) minmax(140px, auto);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
-.contact-chat-admin-head p {
+.contact-chat-participant-card:hover {
+  border-color: var(--color-accent-primary);
+  background: rgba(0, 190, 110, 0.08);
+}
+
+.contact-chat-participant-card h2,
+.contact-chat-participant-card span {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.contact-chat-participant-card h2 {
+  font-size: 1.05rem;
+}
+
+.contact-chat-participant-card span {
   color: var(--color-text-secondary);
+  font-size: 0.92rem;
 }
 
 .contact-chat-admin-messages {
@@ -415,7 +442,8 @@ main.page-container {
 @media (max-width: 900px) {
   .contact-chat-admin,
   .contact-start-form,
-  .contact-admin-reply {
+  .contact-admin-reply,
+  .contact-chat-participant-card {
     grid-template-columns: 1fr;
   }
 
