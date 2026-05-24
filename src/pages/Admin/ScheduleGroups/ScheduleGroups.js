@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../../../components/Header/Header';
 import Footer from '../../../components/Footer/Footer';
 import { scheduleService } from '../../../services/scheduleService';
@@ -155,6 +156,10 @@ const ScheduleGroups = () => {
       <main className="page-container">
         <div className="sg-main">
           <h1 className="sg-title">Группы по сеансам</h1>
+          <p className="sg-muted sg-top-link">
+            Нет нужного сеанса?{' '}
+            <Link to="/admin/schedules">Создайте сеанс в разделе «Сеансы»</Link>
+          </p>
 
           {error && <div className="sg-error">{error}</div>}
 

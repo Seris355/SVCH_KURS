@@ -12,9 +12,19 @@
 }
 
 .sg-title {
-  margin: 0 0 20px;
+  margin: 0 0 8px;
   font-size: 22px;
   text-align: center;
+}
+
+.sg-top-link {
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.sg-top-link a {
+  color: var(--color-accent-secondary);
+  font-weight: 600;
 }
 
 .sg-error {
