@@ -36,6 +36,16 @@ const PIE_COLORS = {
   cancelled: '#fb7185',
 };
 
+const tooltipStyle = {
+  background: '#ffffff',
+  border: '1px solid #e7e7e7',
+  borderRadius: '11px',
+  color: '#2e3b52',
+  boxShadow: '0 8px 24px rgba(46, 59, 82, 0.08)',
+};
+
+const chartTickStyle = { fill: '#5a6478', fontSize: 12 };
+
 const weekTick = (iso) => {
   try {
     return new Date(iso).toLocaleDateString('ru-RU', {
@@ -158,14 +168,11 @@ const AdminAnalytics = () => {
                         data={enrollmentRows}
                         margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                        <XAxis dataKey="weekLabel" tick={{ fill: '#ccc', fontSize: 12 }} />
-                        <YAxis allowDecimals={false} tick={{ fill: '#ccc', fontSize: 12 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e7e7" />
+                        <XAxis dataKey="weekLabel" tick={chartTickStyle} />
+                        <YAxis allowDecimals={false} tick={chartTickStyle} />
                         <Tooltip
-                          contentStyle={{
-                            background: '#1a1a1a',
-                            border: '1px solid #444',
-                          }}
+                          contentStyle={tooltipStyle}
                           labelFormatter={(_, p) =>
                             p?.[0]?.payload?.weekStart
                               ? new Date(
@@ -196,20 +203,15 @@ const AdminAnalytics = () => {
                         layout="vertical"
                         margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                        <XAxis type="number" allowDecimals={false} tick={{ fill: '#ccc' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e7e7" />
+                        <XAxis type="number" allowDecimals={false} tick={chartTickStyle} />
                         <YAxis
                           type="category"
                           dataKey="name"
                           width={120}
-                          tick={{ fill: '#ccc', fontSize: 11 }}
+                          tick={{ fill: '#5a6478', fontSize: 11 }}
                         />
-                        <Tooltip
-                          contentStyle={{
-                            background: '#1a1a1a',
-                            border: '1px solid #444',
-                          }}
-                        />
+                        <Tooltip contentStyle={tooltipStyle} />
                         <Bar dataKey="masterClassCount" name="Мастер-классов" fill="#c084fc" radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -234,24 +236,21 @@ const AdminAnalytics = () => {
                         layout="vertical"
                         margin={{ top: 8, right: 36, left: 8, bottom: 8 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e7e7" />
                         <XAxis
                           type="number"
                           domain={[0, 100]}
                           tickFormatter={(v) => `${v}%`}
-                          tick={{ fill: '#ccc' }}
+                          tick={chartTickStyle}
                         />
                         <YAxis
                           type="category"
                           dataKey="label"
                           width={220}
-                          tick={{ fill: '#ccc', fontSize: 11 }}
+                          tick={{ fill: '#5a6478', fontSize: 11 }}
                         />
                         <Tooltip
-                          contentStyle={{
-                            background: '#1a1a1a',
-                            border: '1px solid #444',
-                          }}
+                          contentStyle={tooltipStyle}
                           formatter={(value) => [`${value}%`, 'Заполнение']}
                           labelFormatter={(l, p) =>
                             p?.[0]?.payload
@@ -291,16 +290,11 @@ const AdminAnalytics = () => {
                               fill={
                                 PIE_COLORS[entry.status] || '#94a3b8'
                               }
-                              stroke="#111"
+                              stroke="#fff"
                             />
                           ))}
                         </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            background: '#1a1a1a',
-                            border: '1px solid #444',
-                          }}
-                        />
+                        <Tooltip contentStyle={tooltipStyle} />
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>

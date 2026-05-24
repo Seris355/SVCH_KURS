@@ -1,5 +1,7 @@
 .participant-list-container {
-  background: var(--color-bg-primary);
+  background:
+    radial-gradient(circle at top left, rgba(0, 190, 110, 0.08), transparent 280px),
+    var(--color-bg-primary);
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--shadow-md);
@@ -24,7 +26,7 @@
   gap: 15px;
   margin-bottom: 20px;
   padding: 15px;
-  background-color: var(--color-bg-primary);
+  background: var(--color-bg-muted);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
@@ -110,7 +112,7 @@
 }
 
 .participant-table th {
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-bg-muted);
   padding: 12px;
   text-align: left;
   font-weight: 600;
@@ -122,16 +124,19 @@
   padding: 12px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
+  background-color: transparent;
+}
+
+.participant-table tbody tr {
   background-color: var(--color-bg-primary);
 }
 
-.participant-table tr {
-  background-color: var(--color-bg-primary);
+.participant-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 83, 159, 0.035);
 }
 
-.participant-table tr:hover {
-  background-color: var(--color-bg-primary);
-  opacity: 0.9;
+.participant-table tbody tr:hover {
+  background-color: rgba(0, 190, 110, 0.1);
 }
 
 .action-buttons {

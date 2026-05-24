@@ -19,7 +19,7 @@
 
 .sg-error {
   background: rgba(197, 48, 48, 0.12);
-  border: 1px solid #c53030;
+  border: 1px solid var(--color-error-border);
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 16px;
@@ -104,6 +104,14 @@
   font-weight: 600;
 }
 
+.sg-table tbody tr:nth-child(even) {
+  background: rgba(0, 83, 159, 0.035);
+}
+
+.sg-table tbody tr:hover {
+  background: rgba(0, 190, 110, 0.1);
+}
+
 .sg-btn {
   padding: 8px 14px;
   font-size: 14px;
@@ -119,13 +127,13 @@
 }
 
 .sg-btn-primary {
-  background: #2c5282;
-  color: #fff;
-  border-color: #2c5282;
+  background: var(--color-primary);
+  color: var(--color-text-on-accent);
+  border-color: var(--color-primary);
 }
 
 .sg-btn-danger {
-  color: #c53030;
+  color: var(--color-error-text);
   border-color: #feb2b2;
   background: #fff5f5;
 }
