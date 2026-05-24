@@ -43,6 +43,16 @@ export const masterClassService = {
     return response.data;
   },
 
+  cancelEnrollment: async (id) => {
+    const response = await api.post(`/masterclasses/${id}/cancel-enrollment`);
+    return response.data;
+  },
+
+  rescheduleEnrollment: async (id, payload = {}) => {
+    const response = await api.put(`/masterclasses/${id}/reschedule`, payload);
+    return response.data;
+  },
+
   
   getMyClasses: async () => {
     const response = await api.get('/masterclasses/my-classes');
