@@ -28,10 +28,11 @@
 }
 
 .sg-error {
-  background: rgba(197, 48, 48, 0.12);
+  background: var(--color-error-bg);
   border: 1px solid var(--color-error-border);
+  color: var(--color-error-text);
   padding: 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   margin-bottom: 16px;
 }
 
@@ -55,20 +56,21 @@
 .sg-select {
   font: inherit;
   padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
   max-width: 100%;
+  background: var(--color-bg-primary);
 }
 
 .sg-muted {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 
 .sg-summary {
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 16px;
   margin-bottom: 20px;
 }
@@ -92,8 +94,8 @@
 
 .sg-table-wrap {
   overflow-x: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
 .sg-table {
@@ -106,11 +108,11 @@
 .sg-table td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sg-table th {
-  background: #f7fafc;
+  background: var(--color-bg-muted);
   font-weight: 600;
 }
 
@@ -125,10 +127,13 @@
 .sg-btn {
   padding: 8px 14px;
   font-size: 14px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  border: 1px solid #cbd5e0;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-primary);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .sg-btn:disabled {
@@ -137,15 +142,26 @@
 }
 
 .sg-btn-primary {
-  background: var(--color-primary);
+  background: var(--color-accent-primary);
   color: var(--color-text-on-accent);
-  border-color: var(--color-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.sg-btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-primary-hover);
+  border-color: var(--color-accent-primary-hover);
 }
 
 .sg-btn-danger {
-  color: var(--color-error-text);
-  border-color: #feb2b2;
-  background: #fff5f5;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-bg-primary);
+}
+
+.sg-btn-danger:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
 }
 
 @media (max-width: 640px) {

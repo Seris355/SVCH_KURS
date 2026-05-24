@@ -32,15 +32,6 @@ main.page-container {
   color: var(--color-text-primary);
 }
 
-.error-message {
-  background-color: rgba(199, 6, 6, 0.2);
-  color: var(--color-text-primary);
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 20px;
-  border: 1px solid var(--color-accent-primary);
-}
-
 .modal-overlay {
   position: fixed;
   top: 0;
