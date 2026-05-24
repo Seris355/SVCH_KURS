@@ -167,6 +167,34 @@
   color: var(--color-text-primary);
 }
 
+.instructor-public-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.instructor-public-spec {
+  color: var(--color-text-secondary);
+  font-size: 1.05rem;
+}
+
+.instructor-public-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(0, 190, 110, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 190, 110, 0.1);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.instructor-public-link:hover {
+  background: var(--color-accent-primary);
+  color: var(--color-text-on-accent);
+}
+
 .mc-public-desc {
   margin: 0;
   line-height: 1.65;

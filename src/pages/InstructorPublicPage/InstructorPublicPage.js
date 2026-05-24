@@ -61,9 +61,13 @@ const InstructorPublicPage = () => {
           <span> / </span>
           <span>{instructor.fullName}</span>
         </nav>
-        <h1>{instructor.fullName}</h1>
-        <p className="instructor-public-spec">{instructor.specialization}</p>
-        <Link to="/masterclass">Смотреть мастер-классы →</Link>
+        <section className="mc-public-card instructor-public-card">
+          <h1>{instructor.fullName}</h1>
+          <p className="instructor-public-spec">{instructor.specialization}</p>
+          <Link className="instructor-public-link" to="/masterclass">
+            Смотреть мастер-классы →
+          </Link>
+        </section>
       </main>
       <Footer />
     </div>
