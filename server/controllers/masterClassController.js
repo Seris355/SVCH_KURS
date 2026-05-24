@@ -121,6 +121,8 @@ exports.getAllMasterClasses = async (req, res) => {
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'name';
     const orderDir = String(sortOrder).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
+    const now = new Date();
+
     const { count, rows } = await MasterClass.findAndCountAll({
       where,
       include: [
@@ -135,6 +137,7 @@ exports.getAllMasterClasses = async (req, res) => {
           separate: true,
           limit: 1,
           order: [['startDate', 'ASC']],
+          where: { startDate: { [Op.gt]: now } },
           attributes: ['id', 'startDate', 'endDate'],
           required: false,
         },
@@ -976,8 +979,14 @@ exports.getParticipantMasterClasses = async (req, res) => {
     const data = masterClasses.map((masterClass) => {
       const json = masterClass.toJSON();
       const enrolledPayment = paymentByMcId.get(json.id);
-      const enrollmentManage = enrolledPayment?.schedule?.startDate
-        ? getEnrollmentModifyStatus(enrolledPayment.schedule.startDate)
+      const enrolledSchedule = enrolledPayment?.schedule || null;
+      const now = new Date();
+      const enrolledScheduleIsPast = enrolledSchedule?.startDate
+        ? new Date(enrolledSchedule.startDate) <= now
+        : false;
+
+      const enrollmentManage = enrolledSchedule?.startDate
+        ? getEnrollmentModifyStatus(enrolledSchedule.startDate)
         : {
             canModify: false,
             daysUntilSession: null,
@@ -986,7 +995,9 @@ exports.getParticipantMasterClasses = async (req, res) => {
 
       return {
         ...json,
-        enrolledSchedule: enrolledPayment?.schedule || null,
+        enrolledSchedule: enrolledSchedule
+          ? { ...enrolledSchedule, isPast: enrolledScheduleIsPast }
+          : null,
         enrolledPayment: enrolledPayment
           ? {
               id: enrolledPayment.id,
