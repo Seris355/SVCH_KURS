@@ -9,16 +9,18 @@
   --color-heading: #2e3b52;
   --color-heading-alt: #2e3b52;
   --color-accent-primary: #00be6e;
+  --color-accent-primary-hover: #00a861;
+  --color-accent-primary-soft: rgba(0, 190, 110, 0.12);
   --color-accent-secondary: #00539f;
+  --color-accent-secondary-soft: rgba(0, 83, 159, 0.08);
   --color-accent-cta: #00be6e;
-  --color-accent-orange: #fd5913;
   --color-text-on-accent: #ffffff;
   --color-border: #e7e7e7;
   --color-primary: #00539f;
   --color-success: #00be6e;
-  --color-error-bg: rgba(253, 89, 19, 0.08);
-  --color-error-border: #fd5913;
-  --color-error-text: #c53030;
+  --color-error-bg: rgba(0, 83, 159, 0.06);
+  --color-error-border: rgba(0, 83, 159, 0.22);
+  --color-error-text: var(--color-text-primary);
 
   --font-family-primary: 'Golos Text', 'Golos', sans-serif;
   --font-family-heading: 'Golos Text', 'Golos', sans-serif;
@@ -175,8 +177,8 @@ button:disabled {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #00a861;
-  border-color: #00a861;
+  background-color: var(--color-accent-primary-hover);
+  border-color: var(--color-accent-primary-hover);
   color: var(--color-text-on-accent);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
@@ -220,6 +222,47 @@ button:disabled {
 .btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-danger {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-bg-muted);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-error-border);
+}
+
+.page-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 input, textarea, select {
