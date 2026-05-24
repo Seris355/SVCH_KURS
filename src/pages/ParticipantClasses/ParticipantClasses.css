@@ -1,8 +1,10 @@
 .masterclasses-page {
-  padding: 20px;
+  padding: 24px 20px;
   width: 100%;
   margin: 0 auto;
-  background-color: var(--color-bg-primary);
+  background:
+    radial-gradient(circle at top left, rgba(0, 190, 110, 0.08), transparent 320px),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   color: var(--color-text-primary);
   min-height: 100vh;
 }
@@ -46,6 +48,39 @@ main.page-container {
   min-height: 120px;
   padding: 0.35rem;
   box-sizing: border-box;
+}
+
+.instructor-filter-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem;
+  max-height: 170px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+}
+
+.instructor-filter-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-primary);
+}
+
+.instructor-filter-item:hover {
+  background: rgba(0, 190, 110, 0.08);
+}
+
+.instructor-filter-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .participant-mc-card-photo {
@@ -161,15 +196,16 @@ main.page-container {
 }
 
 .btn-favorite:hover {
-  border-color: #c05621;
-  color: #c05621;
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+  background-color: rgba(0, 190, 110, 0.08);
 }
 
 .btn-favorite-active {
-  background-color: rgba(197, 48, 48, 0.08);
-  color: #9b2c2c;
+  background-color: rgba(0, 190, 110, 0.12);
+  color: #007a47;
   padding: 10px 20px;
-  border: 1px solid #feb2b2;
+  border: 1px solid rgba(0, 190, 110, 0.35);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 14px;
@@ -177,7 +213,7 @@ main.page-container {
 }
 
 .btn-favorite-active:hover {
-  background-color: rgba(197, 48, 48, 0.15);
+  background-color: rgba(0, 190, 110, 0.2);
 }
 
 .masterclass-grid {
@@ -193,6 +229,9 @@ main.page-container {
   overflow: hidden;
   transition: box-shadow var(--transition-normal);
   background: var(--color-bg-primary);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .masterclass-card:hover {
@@ -202,6 +241,10 @@ main.page-container {
 
 .masterclass-info {
   padding: 15px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .masterclass-info h3 {
@@ -215,10 +258,15 @@ main.page-container {
   font-size: var(--font-size-sm);
   margin-bottom: 15px;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .masterclass-details {
   margin-bottom: 15px;
+  flex: 1;
 }
 
 .detail-item {
@@ -236,6 +284,7 @@ main.page-container {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .btn-view {
@@ -250,6 +299,24 @@ main.page-container {
   font-family: var(--font-family-primary);
   flex: 1;
   min-width: 0;
+}
+
+.btn-pay {
+  flex: 1;
+  padding: 10px 20px;
+  border: 1px solid var(--color-accent-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-primary);
+  color: var(--color-text-on-accent);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font-family-primary);
+  transition: all var(--transition-normal);
+}
+
+.btn-pay:hover:not(:disabled) {
+  background: #00a861;
+  border-color: #00a861;
 }
 
 .btn-view:hover {
@@ -348,7 +415,7 @@ main.page-container {
   gap: 15px;
   margin-bottom: 20px;
   padding: 15px;
-  background-color: var(--color-bg-primary);
+  background: var(--color-bg-muted);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
@@ -405,9 +472,11 @@ main.page-container {
 .filter-buttons {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: flex-end;
   justify-content: flex-start;
+  grid-column: 1 / -1;
 }
 
 .filter-buttons .btn-primary,
@@ -422,6 +491,8 @@ main.page-container {
   color: var(--color-text-primary);
   font-family: var(--font-family-primary);
   white-space: nowrap;
+  min-width: 6.5rem;
+  flex-shrink: 0;
 }
 
 .filter-buttons .btn-primary:hover {
