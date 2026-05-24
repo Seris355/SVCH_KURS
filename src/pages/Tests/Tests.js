@@ -32,7 +32,7 @@ const Tests = () => {
   }, [loadTests]);
 
   return (
-    <div className="tests-page">
+    <div>
       <Header />
 
       <main className="tests-main">

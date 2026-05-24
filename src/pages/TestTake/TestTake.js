@@ -95,7 +95,7 @@ const TestTake = () => {
   };
 
   return (
-    <div className="test-take-page">
+    <div>
       <Header />
 
       <main className="test-take-main">

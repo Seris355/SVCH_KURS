@@ -7,6 +7,15 @@ import { reviewService } from '../../services/reviewService';
 import { authUtils } from '../../utils/auth';
 import './MasterClassPublicPage.css';
 
+const formatDateTime = (value) =>
+  new Date(value).toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
 const MasterClassPublicPage = () => {
   const { id } = useParams();
   const [data, setData] = useState(null);
@@ -82,7 +91,7 @@ const MasterClassPublicPage = () => {
     const upcoming = (data.schedules || []).filter((s) => new Date(s.startDate) > now);
     if (upcoming.length === 0) {
       setEnrollError(
-        'Нет будущих сеансов для онлайн-записи. Попробуйте позже или откройте каталог в личном кабинете.'
+        'Нет будущих сеансов для записи. Попробуйте позже или откройте каталог в личном кабинете.'
       );
       return;
     }
@@ -114,11 +123,50 @@ const MasterClassPublicPage = () => {
     }
   };
 
+  const renderEnrollActions = () => {
+    if (!isParticipant) {
+      return (
+        <>
+          <Link className="btn-primary mc-public-btn-full" to="/login">
+            Войти для записи
+          </Link>
+          <Link className="btn-secondary mc-public-btn-full" to="/register">
+            Регистрация
+          </Link>
+        </>
+      );
+    }
+
+    if (data.viewerHasEnrollment) {
+      return (
+        <>
+          <p className="mc-public-status-note">Вы уже записаны на этот мастер-класс.</p>
+          <Link className="btn-primary mc-public-btn-full" to="/participant/classes">
+            Мои мастер-классы
+          </Link>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <button type="button" className="btn-primary mc-public-btn-full" onClick={openEnrollModal}>
+          Записаться
+        </button>
+        <Link className="btn-secondary mc-public-btn-full" to="/participant/classes">
+          Каталог в личном кабинете
+        </Link>
+      </>
+    );
+  };
+
   if (loading) {
     return (
       <div>
         <Header />
-        <main className="mc-public-page"><div className="loading">Загрузка...</div></main>
+        <main className="mc-public-page">
+          <div className="mc-public-state">Загрузка…</div>
+        </main>
         <Footer />
       </div>
     );
@@ -129,8 +177,12 @@ const MasterClassPublicPage = () => {
       <div>
         <Header />
         <main className="mc-public-page">
-          <p className="error-message">{error || 'Нет данных'}</p>
-          <Link to="/masterclass">← К каталогу</Link>
+          <div className="mc-public-card mc-public-state-card">
+            <p className="mc-public-error">{error || 'Нет данных'}</p>
+            <Link to="/masterclass" className="mc-public-back-link">
+              ← Вернуться в каталог
+            </Link>
+          </div>
         </main>
         <Footer />
       </div>
@@ -138,82 +190,139 @@ const MasterClassPublicPage = () => {
   }
 
   const reviews = data.reviews || [];
+  const hasPhoto = Boolean(data.photo);
 
   return (
     <div>
       <Header />
       <main className="mc-public-page">
-        <nav className="mc-public-breadcrumbs">
+        <nav className="mc-public-breadcrumbs" aria-label="Навигация">
+          <Link to="/">Главная</Link>
+          <span className="mc-public-breadcrumbs-sep">/</span>
           <Link to="/masterclass">Каталог</Link>
-          <span> / </span>
-          <span>{data.name}</span>
+          <span className="mc-public-breadcrumbs-sep">/</span>
+          <span className="mc-public-breadcrumbs-current">{data.name}</span>
         </nav>
-        {data.photo && (
-          <div className="mc-public-hero">
-            <img src={data.photo} alt={data.name} />
-          </div>
-        )}
-        <h1>{data.name}</h1>
-        <p className="mc-public-desc">{data.description}</p>
-        <p>
-          <strong>Цена:</strong> {parseFloat(data.price).toFixed(2)} Br
-        </p>
-        {data.avgRating != null && (
-          <p>
-            <strong>Средняя оценка:</strong> {data.avgRating} ★ ({data.reviewCount ?? reviews.length}{' '}
-            отзывов)
-          </p>
-        )}
-        {data.instructor && (
-          <p>
-            <strong>Инструктор:</strong>{' '}
-            <Link to={`/instructors/${data.instructor.id}`}>{data.instructor.fullName}</Link>
-            {' — '}
-            {data.instructor.specialization}
-          </p>
-        )}
+
+        <div className={`mc-public-top ${hasPhoto ? '' : 'mc-public-top--no-photo'}`}>
+          {hasPhoto && (
+            <div className="mc-public-hero">
+              <img src={data.photo} alt={data.name} />
+            </div>
+          )}
+
+          <aside className="mc-public-summary">
+            <h1 className="mc-public-title">{data.name}</h1>
+
+            <div className="mc-public-meta">
+              <div className="mc-public-meta-row">
+                <span className="mc-public-meta-label">Стоимость</span>
+                <span className="mc-public-price">
+                  {parseFloat(data.price).toFixed(2)} Br
+                </span>
+              </div>
+
+              {data.avgRating != null && (
+                <div className="mc-public-meta-row">
+                  <span className="mc-public-meta-label">Оценка</span>
+                  <span className="mc-public-rating">
+                    {data.avgRating} ★
+                    <span className="mc-public-rating-count">
+                      ({data.reviewCount ?? reviews.length} отзывов)
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              {data.instructor && (
+                <div className="mc-public-meta-row">
+                  <span className="mc-public-meta-label">Инструктор</span>
+                  <span className="mc-public-meta-value">
+                    <Link to={`/instructors/${data.instructor.id}`}>
+                      {data.instructor.fullName}
+                    </Link>
+                    <span className="mc-public-meta-sub">{data.instructor.specialization}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {enrollError && !enrollDialog && (
+              <p className="mc-public-error" role="alert">
+                {enrollError}
+              </p>
+            )}
+
+            <div className="mc-public-actions">{renderEnrollActions()}</div>
+          </aside>
+        </div>
+
+        <section className="mc-public-card">
+          <h2 className="mc-public-section-title">О программе</h2>
+          <p className="mc-public-desc">{data.description}</p>
+        </section>
+
         {data.schedules && data.schedules.length > 0 && (
-          <section className="mc-public-section">
-            <h2>Расписание</h2>
-            <ul>
-              {data.schedules.map((s) => (
-                <li key={s.id}>
-                  {new Date(s.startDate).toLocaleString('ru-RU')} —{' '}
-                  {new Date(s.endDate).toLocaleString('ru-RU')}
-                  {s.location?.name ? ` · ${s.location.name}` : ''}
-                </li>
+          <section className="mc-public-card">
+            <h2 className="mc-public-section-title">Расписание</h2>
+            <div className="mc-public-schedule-grid">
+              {data.schedules.map((schedule) => (
+                <article key={schedule.id} className="mc-public-schedule-item">
+                  <p className="mc-public-schedule-date">
+                    {formatDateTime(schedule.startDate)}
+                  </p>
+                  <p className="mc-public-schedule-end">
+                    до {formatDateTime(schedule.endDate)}
+                  </p>
+                  {schedule.location?.name && (
+                    <p className="mc-public-schedule-place">{schedule.location.name}</p>
+                  )}
+                  {schedule.location?.address && (
+                    <p className="mc-public-schedule-address">{schedule.location.address}</p>
+                  )}
+                </article>
               ))}
-            </ul>
+            </div>
           </section>
         )}
-        <section className="mc-public-section">
-          <h2>Отзывы</h2>
+
+        <section className="mc-public-card">
+          <h2 className="mc-public-section-title">Отзывы</h2>
+
           {data.viewerHasReview && isParticipant && (
-            <p className="mc-public-review-hint">Вы уже оставили отзыв об этом мастер-классе.</p>
+            <p className="mc-public-hint">Вы уже оставили отзыв об этом мастер-классе.</p>
           )}
-          {reviews.length === 0 && <p>Пока нет отзывов.</p>}
+
+          {reviews.length === 0 && (
+            <p className="mc-public-empty">Пока нет отзывов — будьте первым после участия.</p>
+          )}
+
           {reviews.length > 0 && (
             <ul className="mc-public-reviews">
-              {reviews.map((r) => (
-                <li key={r.id}>
-                  <strong>{r.participant?.fullName || 'Участник'}</strong> — {r.rating} ★
-                  {r.comment && <p>{r.comment}</p>}
+              {reviews.map((review) => (
+                <li key={review.id} className="mc-public-review-item">
+                  <div className="mc-public-review-head">
+                    <strong>{review.participant?.fullName || 'Участник'}</strong>
+                    <span className="mc-public-review-stars">{review.rating} ★</span>
+                  </div>
+                  {review.comment && <p className="mc-public-review-text">{review.comment}</p>}
                 </li>
               ))}
             </ul>
           )}
+
           {data.viewerCanSubmitReview && (
             <form className="mc-public-review-form" onSubmit={handleSubmitReview}>
               <h3 className="mc-public-review-form-title">Оставить отзыв</h3>
-              <p className="mc-public-review-hint">
+              <p className="mc-public-hint">
                 Доступно, потому что вы записаны на этот мастер-класс.
               </p>
               {formMessage && (
-                <p className="mc-public-review-success" role="status">
+                <p className="mc-public-success" role="status">
                   {formMessage}
                 </p>
               )}
-              {formError && <p className="error-message">{formError}</p>}
+              {formError && <p className="mc-public-error">{formError}</p>}
               <label className="mc-public-review-label">
                 Оценка
                 <select
@@ -236,61 +345,23 @@ const MasterClassPublicPage = () => {
                   rows={4}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="По желанию"
+                  placeholder="Расскажите, что понравилось или что можно улучшить"
                   disabled={submittingReview}
                   maxLength={2000}
                 />
               </label>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submittingReview}
-              >
+              <button type="submit" className="btn-primary" disabled={submittingReview}>
                 {submittingReview ? 'Отправка…' : 'Отправить отзыв'}
               </button>
             </form>
           )}
+
           {isParticipant && !data.viewerHasEnrollment && (
-            <p className="mc-public-review-hint">
+            <p className="mc-public-hint">
               После записи на мастер-класс здесь появится форма отзыва.
             </p>
           )}
         </section>
-        {enrollError && !enrollDialog && (
-          <p className="error-message" role="alert">
-            {enrollError}
-          </p>
-        )}
-        <div className="mc-public-actions">
-          {!isParticipant ? (
-            <>
-              <Link className="btn-primary" to="/login">
-                Войти для записи
-              </Link>
-              <Link className="btn-secondary" to="/register">
-                Регистрация
-              </Link>
-            </>
-          ) : data.viewerHasEnrollment ? (
-            <>
-              <span className="mc-public-review-hint" style={{ width: '100%', marginBottom: '0.25rem' }}>
-                Вы уже записаны на этот мастер-класс.
-              </span>
-              <Link className="btn-primary" to="/participant/classes">
-                Мои мастер-классы
-              </Link>
-            </>
-          ) : (
-            <>
-              <button type="button" className="btn-primary" onClick={openEnrollModal}>
-                Записаться
-              </button>
-              <Link className="btn-secondary" to="/participant/classes">
-                Расширенный каталог и фильтры в кабинете
-              </Link>
-            </>
-          )}
-        </div>
 
         {enrollDialog && (
           <div
@@ -308,9 +379,9 @@ const MasterClassPublicPage = () => {
               <h2 id="mc-enroll-title" className="mc-public-enroll-title">
                 Выберите сеанс
               </h2>
-              <p>{data.name}</p>
+              <p className="mc-public-enroll-subtitle">{data.name}</p>
               {enrollError && enrollDialog && (
-                <p className="error-message">{enrollError}</p>
+                <p className="mc-public-error">{enrollError}</p>
               )}
               <label htmlFor="mc-public-enroll-schedule" className="mc-public-enroll-label">
                 Дата и место
@@ -331,10 +402,10 @@ const MasterClassPublicPage = () => {
                   )
                 }
               >
-                {enrollDialog.schedules.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {new Date(s.startDate).toLocaleString('ru-RU')}
-                    {s.location?.name ? ` — ${s.location.name}` : ''}
+                {enrollDialog.schedules.map((schedule) => (
+                  <option key={schedule.id} value={schedule.id}>
+                    {formatDateTime(schedule.startDate)}
+                    {schedule.location?.name ? ` — ${schedule.location.name}` : ''}
                   </option>
                 ))}
               </select>
