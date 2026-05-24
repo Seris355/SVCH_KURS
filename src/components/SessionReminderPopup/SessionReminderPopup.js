@@ -1,26 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { authUtils } from '../../utils/auth';
-import { reminderService } from '../../services/reminderService';
+import { useSessionReminders, REMINDER_DAYS_AHEAD } from '../../hooks/useSessionReminders';
 import './SessionReminderPopup.css';
-
-const STORAGE_KEY = 'dismissedSiteReminders';
-
-const REMINDER_DAYS_AHEAD = 3;
-
-function readDismissedIds() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveDismissedIds(ids) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-}
 
 function formatDate(value) {
   return new Date(value).toLocaleString('ru-RU', {
@@ -31,56 +12,34 @@ function formatDate(value) {
 
 const SessionReminderPopup = () => {
   const location = useLocation();
-  const [items, setItems] = useState([]);
-  const [visible, setVisible] = useState(false);
+  const { toastItems, dismissToast } = useSessionReminders({
+    enabled: true,
+    reloadKey: location.pathname,
+  });
 
-  const loadReminders = useCallback(async () => {
-    const user = authUtils.getUser();
-    if (!authUtils.isLoggedIn() || user.role !== 'participant') {
-      setItems([]);
-      setVisible(false);
-      return;
-    }
-
-    try {
-      const response = await reminderService.getUpcoming();
-      const dismissed = new Set(readDismissedIds());
-      const upcoming = (response?.data || []).filter(
-        (item) => !dismissed.has(item.scheduleId)
-      );
-      setItems(upcoming);
-      setVisible(upcoming.length > 0);
-    } catch {
-      setItems([]);
-      setVisible(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadReminders();
-  }, [loadReminders, location.pathname]);
-
-  const handleDismiss = () => {
-    const dismissed = new Set(readDismissedIds());
-    items.forEach((item) => dismissed.add(item.scheduleId));
-    saveDismissedIds([...dismissed]);
-    setVisible(false);
-    setItems([]);
-  };
-
-  if (!visible || items.length === 0) {
+  if (toastItems.length === 0) {
     return null;
   }
 
   return (
-    <div className="session-reminder-overlay" role="dialog" aria-modal="true">
-      <div className="session-reminder-popup">
-        <h2>Напоминание о занятиях</h2>
+    <div className="session-reminder-toast-wrap" aria-live="polite">
+      <div className="session-reminder-toast" role="status">
+        <div className="session-reminder-toast-header">
+          <h2>Напоминание о занятиях</h2>
+          <button
+            type="button"
+            className="session-reminder-close"
+            onClick={dismissToast}
+            aria-label="Закрыть напоминание"
+          >
+            ×
+          </button>
+        </div>
         <p className="session-reminder-intro">
           В ближайшие {REMINDER_DAYS_AHEAD} дня у вас запланированы следующие мероприятия:
         </p>
 
-        {items.map((item) => (
+        {toastItems.map((item) => (
           <div key={item.scheduleId} className="session-reminder-item">
             <strong>{item.masterClassName}</strong>
             <p>Дата: {formatDate(item.startDate)}</p>
@@ -90,7 +49,7 @@ const SessionReminderPopup = () => {
         ))}
 
         <div className="session-reminder-actions">
-          <button type="button" onClick={handleDismiss}>
+          <button type="button" onClick={dismissToast}>
             Понятно
           </button>
         </div>
