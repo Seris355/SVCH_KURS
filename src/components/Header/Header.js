@@ -30,7 +30,7 @@ const Header = () => {
           )}
         </div>
         <div className="h_nav_2">
-          <img src="/images/images_foote_header/logo.svg" alt="Логотип салона красоты" className="logo_header" />
+          <img src="/images/images_foote_header/logo.svg" alt="Логотип школы здорового питания" className="logo_header" />
         </div>
         <div className="h_nav">
           {isLoggedIn && (

@@ -445,7 +445,7 @@ const ParticipantClasses = () => {
                         </p>
                         <div className="masterclass-details">
                           <div className="detail-item">
-                            <strong>Сумма:</strong> {parseFloat(p.amount).toFixed(2)} ₽
+                            <strong>Сумма:</strong> {parseFloat(p.amount).toFixed(2)} Br
                           </div>
                           <div className="detail-item">
                             <strong>Статус:</strong>{' '}
@@ -490,7 +490,7 @@ const ParticipantClasses = () => {
                         <p className="masterclass-description">{masterClass.description}</p>
                         <div className="masterclass-details">
                           <div className="detail-item">
-                            <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} ₽
+                            <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} Br
                           </div>
                           {masterClass.instructor && (
                             <div className="detail-item">

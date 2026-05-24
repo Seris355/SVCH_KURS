@@ -146,7 +146,7 @@ const MasterClassList = ({
                 </p>
                 <div className="masterclass-details">
                   <div className="detail-item">
-                    <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} ₽
+                    <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} Br
                   </div>
                   {masterClass.instructor && (
                     <div className="detail-item">

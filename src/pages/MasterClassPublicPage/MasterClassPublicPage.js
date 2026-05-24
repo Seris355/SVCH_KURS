@@ -156,7 +156,7 @@ const MasterClassPublicPage = () => {
         <h1>{data.name}</h1>
         <p className="mc-public-desc">{data.description}</p>
         <p>
-          <strong>Цена:</strong> {parseFloat(data.price).toFixed(2)} ₽
+          <strong>Цена:</strong> {parseFloat(data.price).toFixed(2)} Br
         </p>
         {data.avgRating != null && (
           <p>

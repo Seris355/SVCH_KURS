@@ -113,7 +113,7 @@ const Contact = () => {
             <div className="map-container">
               <iframe
                 title="Карта"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1998.598942412404!2d30.320894616096975!3d59.93879486904801!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4696310fca5ba729%3A0xea9c53d4493c879f!2z0JHQvtC70YzRiNCw0Y8g0JrQvtC90Y7RiNC10L3QvdCw0Y8g0YPQuy4sIDM2LCDQodCw0L3QutGCLdCf0LXRgtC10YDQsdGD0YDQsywgMTkxMTg2!5e0!3m2!1sru!2sru!4v1234567890"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2350.448509139887!2d27.5615!3d53.9045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dbcfd25b1c23a1%3A0x400a089f2a490c0!2z0JzQuNC90YHQutC40Lkg0L%2BQvNC10YLRgdC60LDRjyDQv9GA0L7QstC10YDRgtC40Y8!5e0!3m2!1sru!2sby!4v1234567890"
                 className="map-iframe"
                 style={{ border: 0 }}
                 allowFullScreen=""
@@ -124,19 +124,19 @@ const Contact = () => {
             <div className="flex">
               <div className="contact_info">
                 <h3>Контакты</h3>
-                <p className="phone">+7 (812) 123-45-67</p>
-                <p className="phone">+7 (911) 123-45-67</p>
-                <p className="adress">Новоостровский проспект, дом 36 лит.</p>
+                <p className="phone">+375 (17) 338-88-88</p>
+                <p className="phone">7766 (A1, MTC, life:)</p>
+                <p className="adress">г. Минск, пр. Независимости, 95</p>
               </div>
               <div className="contact_info">
                 <h3>Режим работы</h3>
-                <p className="phone">C 10:00 до 21:00 (Пн-Пт)</p>
-                <p className="phone">С 11:00 до 20:00 (Сб-Вс)</p>
+                <p className="phone">Пн–Пт: 10:00–21:00</p>
+                <p className="phone">Сб–Вс: 11:00–20:00</p>
               </div>
               <div className="contact_info">
-                <h3>Дополнительная</h3>
-                <p className="phone">Будем рады вас видеть!</p>
-                <p className="phone">Не забудьте взять бахилы</p>
+                <h3>Запись</h3>
+                <p className="phone">Мастер-классы — в каталоге на сайте</p>
+                <p className="phone">Вопросы — через форму обратной связи</p>
               </div>
             </div>
           </div>

@@ -77,7 +77,7 @@ const CatalogPublic = () => {
                     <p className="masterclass-description">{mc.description}</p>
                     <div className="masterclass-details">
                       <div className="detail-item">
-                        <strong>Цена:</strong> {parseFloat(mc.price).toFixed(2)} ₽
+                        <strong>Цена:</strong> {parseFloat(mc.price).toFixed(2)} Br
                       </div>
                       {mc.instructor && (
                         <div className="detail-item">

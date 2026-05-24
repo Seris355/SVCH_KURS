@@ -4,10 +4,19 @@
 .h2_underh {
   text-align: center;
   margin-top: var(--spacing-2xl);
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: var(--spacing-md);
   font-size: var(--font-size-3xl);
   font-weight: 700;
   line-height: 1.2;
+}
+
+.services-intro {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto var(--spacing-xl);
+  padding: 0 var(--spacing-md);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
 .flex_price {
@@ -30,7 +39,7 @@
 
 .price_money {
   white-space: nowrap;
-  color: var(--color-accent-primary);
+  color: var(--color-text-primary);
   font-weight: 700;
 }
 

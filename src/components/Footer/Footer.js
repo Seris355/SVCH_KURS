@@ -6,18 +6,18 @@ const Footer = () => {
     <footer className="footer">
       <div className="f_list">
         <div className="logo_footer">
-          <img src="/images/images_foote_header/logo2.svg" alt="Логотип салона красоты" className="logo_footer" />
+          <img src="/images/images_foote_header/logo2.svg" alt="Логотип школы здорового питания" className="logo_footer" />
         </div>
         <div className="footer_phone_flex_error">
-          <p>+7 (812) 123-45-67</p>
-          <p>+7 (911) 123-45-67</p>
+          <p>+375 (17) 338-88-88</p>
+          <p>7766 (A1, MTC, life:)</p>
         </div>
         <div className="footer_phone_flex_error">
-          <p>Новоостровский проспект, дом 36 лит.</p>
+          <p>г. Минск, пр. Независимости, 95</p>
         </div>
         <div className="footer_phone_flex_error">
-          <p>С 10:00 до 21:00 (Пн-Пт)</p>
-          <p>С 11:00 до 20:00 (Сб-Вс)</p>
+          <p>Пн–Пт: 10:00–21:00</p>
+          <p>Сб–Вс: 11:00–20:00</p>
         </div>
         <div className="footer_inst">
           <a
@@ -31,7 +31,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="footer_copy">
-        <p>&copy; 2024 Салон красоты «Delote-Beauty». Все права защищены.</p>
+        <p>&copy; 2026 Школа здорового питания и диабета. Все права защищены.</p>
       </div>
     </footer>
   );

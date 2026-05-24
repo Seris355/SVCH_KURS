@@ -1,26 +1,38 @@
 
 :root {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #eff0f4;
+  --color-bg-muted: #f5f6f8;
+  --color-text-primary: #2e3b52;
+  --color-text-secondary: #5a6478;
+  --color-text-muted: #8b95a5;
+  --color-heading: #2e3b52;
+  --color-heading-alt: #2e3b52;
+  --color-accent-primary: #00be6e;
+  --color-accent-secondary: #00539f;
+  --color-accent-cta: #00be6e;
+  --color-accent-orange: #fd5913;
+  --color-text-on-accent: #ffffff;
+  --color-border: #e7e7e7;
+  --color-primary: #00539f;
+  --color-success: #00be6e;
+  --color-error-bg: rgba(253, 89, 19, 0.08);
+  --color-error-border: #fd5913;
+  --color-error-text: #c53030;
 
-  --color-bg-primary: #000000;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #e0e0e0;
-  --color-accent-primary: #c70606;
-  --color-border: #333333;
-
-  
-  --font-family-primary: 'Cormorant Garamond', serif;
+  --font-family-primary: 'Golos Text', 'Golos', sans-serif;
+  --font-family-heading: 'Golos Text', 'Golos', sans-serif;
   --font-family-mono: 'Courier New', monospace;
-  
+
   --font-size-xs: 14px;
   --font-size-sm: 16px;
-  --font-size-base: 18px;
-  --font-size-lg: 24px;
-  --font-size-xl: 27px;
-  --font-size-2xl: 30px;
-  --font-size-3xl: 48px;
-  --font-size-4xl: 72px;
+  --font-size-base: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 40px;
+  --font-size-4xl: 48px;
 
-  
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
@@ -28,24 +40,20 @@
   --spacing-xl: 3rem;
   --spacing-2xl: 5rem;
 
-  
-  --radius-sm: 5px;
-  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-md: 11px;
   --radius-lg: 15px;
 
-  
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(46, 59, 82, 0.06);
+  --shadow-md: 0 8px 24px rgba(46, 59, 82, 0.08);
+  --shadow-lg: 0 16px 40px rgba(46, 59, 82, 0.1);
 
-  
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.3s ease;
-  --transition-slow: 0.5s ease;
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
   --max-width-content: 1296px;
 }
-
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -65,6 +73,7 @@ body {
   padding: var(--spacing-sm);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-base);
+  font-weight: 400;
   line-height: 1.6;
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
@@ -76,11 +85,12 @@ main {
   width: 100%;
 }
 
-
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-heading);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   margin: 0;
+  color: var(--color-text-primary);
 }
 
 h1 { font-size: var(--font-size-4xl); }
@@ -96,16 +106,14 @@ code, kbd, pre, samp {
   font-family: var(--font-family-mono);
 }
 
-
 a {
   color: var(--color-text-primary);
   text-decoration: none;
-  transition: color var(--transition-normal);
+  transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-accent-primary);
-  text-decoration: underline;
+  color: var(--color-accent-secondary);
 }
 
 a:visited {
@@ -117,13 +125,11 @@ a:focus {
   outline-offset: 2px;
 }
 
-
 ul, ol {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-
 
 img {
   max-width: 100%;
@@ -131,7 +137,6 @@ img {
   display: block;
   border: none;
 }
-
 
 button, input, textarea, select {
   font-family: inherit;
@@ -153,54 +158,62 @@ button:disabled {
 }
 
 .btn-primary {
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  padding: 10px 20px;
-  border-radius: var(--radius-sm);
+  background-color: var(--color-accent-cta);
+  color: var(--color-text-on-accent);
+  border: 1px solid var(--color-accent-cta);
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: var(--font-size-base);
   font-family: var(--font-family-primary);
-  font-weight: 500;
-  transition: all var(--transition-normal);
+  font-weight: 600;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   text-align: center;
   text-decoration: none;
   display: inline-block;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-accent-primary);
-  border-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  background-color: #00a861;
+  border-color: #00a861;
+  color: var(--color-text-on-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn-primary:disabled {
-  background-color: var(--color-bg-primary);
-  border-color: var(--color-border);
+  background-color: #c5d0db;
+  border-color: #c5d0db;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .btn-secondary {
   background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  padding: 10px 20px;
-  border-radius: var(--radius-sm);
+  color: var(--color-accent-secondary);
+  border: 1px solid var(--color-accent-secondary);
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: var(--font-size-base);
   font-family: var(--font-family-primary);
-  font-weight: 500;
-  transition: all var(--transition-normal);
+  font-weight: 600;
+  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   text-align: center;
   text-decoration: none;
   display: inline-block;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-accent-primary);
-  border-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  background-color: var(--color-accent-secondary);
+  border-color: var(--color-accent-secondary);
+  color: var(--color-text-on-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:disabled {
@@ -210,23 +223,30 @@ button:disabled {
 
 input, textarea, select {
   width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 12px 16px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
 }
 
 input:focus, textarea:focus, select:focus {
-  outline: 2px solid var(--color-accent-primary);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--color-accent-secondary);
+  box-shadow: 0 0 0 3px rgba(0, 83, 159, 0.12);
 }
 
 textarea {
   resize: vertical;
   min-height: 100px;
 }
-
 
 .hidden { display: none !important; }
 
@@ -246,7 +266,6 @@ textarea {
 .text-left { text-align: left; }
 .text-right { text-align: right; }
 
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -254,7 +273,7 @@ textarea {
 
 @keyframes slideIn {
   from {
-    transform: translateY(-20px);
+    transform: translateY(-12px);
     opacity: 0;
   }
   to {
@@ -263,13 +282,34 @@ textarea {
   }
 }
 
-@keyframes shake {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(10deg); }
-  50% { transform: rotate(-10deg); }
-  75% { transform: rotate(5deg); }
+@keyframes slideUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes softPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+
+@keyframes helixReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in { animation: fadeIn var(--transition-slow); }
 .animate-slide-in { animation: slideIn var(--transition-normal); }
-.animate-shake { animation: shake 1s ease-in-out; }
+.animate-slide-up { animation: slideUp var(--transition-normal); }
+.animate-helix-reveal { animation: helixReveal 0.6s cubic-bezier(0.4, 0, 0.2, 1); }

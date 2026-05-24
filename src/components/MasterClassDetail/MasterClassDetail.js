@@ -43,7 +43,7 @@ const MasterClassDetail = ({
 
           <div className="detail-field">
             <label>Цена:</label>
-            <span>{parseFloat(masterClass.price).toFixed(2)} ₽</span>
+            <span>{parseFloat(masterClass.price).toFixed(2)} Br</span>
           </div>
 
           {avg != null && (
