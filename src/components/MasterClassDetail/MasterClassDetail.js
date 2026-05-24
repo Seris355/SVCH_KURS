@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './MasterClassDetail.css';
 
 const MasterClassDetail = ({
@@ -7,14 +8,24 @@ const MasterClassDetail = ({
   reviewFormSlot = null,
   noteBelowReviews = null,
 }) => {
+  useEffect(() => {
+    document.body.classList.add('modal-open');
+    return () => document.body.classList.remove('modal-open');
+  }, []);
+
   if (!masterClass) return null;
 
   const avg = masterClass.avgRating;
   const reviews = masterClass.reviews || [];
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
+  const modalContent = (
+    <div className="modal-overlay" onClick={onClose} role="presentation">
+      <div
+        className="modal-content detail-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="modal-header">
           <h2>Детальная информация о мастер-классе</h2>
         </div>
@@ -86,8 +97,10 @@ const MasterClassDetail = ({
               <ul className="reviews-list">
                 {reviews.map((r) => (
                   <li key={r.id} className="review-item">
-                    <strong>{r.participant?.fullName || 'Участник'}</strong>
-                    <span className="review-rating"> {r.rating} ★</span>
+                    <div className="review-item-head">
+                      <strong>{r.participant?.fullName || 'Участник'}</strong>
+                      <span className="review-rating">{r.rating} ★</span>
+                    </div>
                     {r.comment && <p className="review-comment">{r.comment}</p>}
                   </li>
                 ))}
@@ -123,6 +136,8 @@ const MasterClassDetail = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default MasterClassDetail;
