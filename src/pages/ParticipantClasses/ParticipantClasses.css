@@ -52,35 +52,49 @@ main.page-container {
 
 .instructor-filter-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.5rem;
-  max-height: 170px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.65rem;
+  max-height: 260px;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: 0.75rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--color-bg-primary);
 }
 
 .instructor-filter-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0.65rem;
+  gap: 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   color: var(--color-text-primary);
+  line-height: 1.35;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .instructor-filter-item:hover {
   background: rgba(0, 190, 110, 0.08);
 }
 
+.instructor-filter-item--selected {
+  background: rgba(0, 190, 110, 0.12);
+  border-color: rgba(0, 190, 110, 0.35);
+}
+
 .instructor-filter-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.instructor-filter-item input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
 }
 
 .participant-mc-card-photo {
