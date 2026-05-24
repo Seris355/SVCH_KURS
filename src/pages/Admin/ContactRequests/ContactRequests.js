@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { setItemsPerPage } from '../../../store/slices/userSettingsSlice';
+import React, { useCallback, useEffect, useState } from 'react';
 import { contactService } from '../../../services/contactService';
 import Header from '../../../components/Header/Header';
 import Footer from '../../../components/Footer/Footer';
@@ -8,114 +6,103 @@ import './ContactRequests.css';
 
 const formatWhen = (value) => {
   if (!value) return '';
-  try {
-    return new Date(value).toLocaleString('ru-RU', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return String(value);
-  }
+  return new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const ContactRequests = () => {
-  const dispatch = useAppDispatch();
-  const { itemsPerPage } = useAppSelector((state) => state.userSettings);
-
-  const [items, setItems] = useState([]);
+  const [threads, setThreads] = useState([]);
+  const [selectedThreadId, setSelectedThreadId] = useState(null);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [search, setSearch] = useState('');
+  const [reply, setReply] = useState('');
+  const [startEmail, setStartEmail] = useState('');
+  const [startMessage, setStartMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    totalPages: 0,
-  });
-
-  const [inputFilters, setInputFilters] = useState({
-    search: '',
-    isRead: '',
-  });
-  const [filters, setFilters] = useState(inputFilters);
-
-  const loadList = useCallback(async () => {
+  const loadThreads = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = {
-        page: currentPage,
-        limit: itemsPerPage,
-        sortOrder: 'DESC',
-      };
-      if (filters.search.trim()) {
-        params.search = filters.search.trim();
+      const res = await contactService.getThreads(search.trim() ? { search: search.trim() } : {});
+      const list = res.data || [];
+      setThreads(list);
+      if (!selectedThreadId && list.length > 0) {
+        setSelectedThreadId(list[0].id);
       }
-      if (filters.isRead === 'true' || filters.isRead === 'false') {
-        params.isRead = filters.isRead;
-      }
-
-      const response = await contactService.getAll(params);
-
-      setItems(response.data || []);
-      setPagination({
-        total: response.pagination?.total || 0,
-        totalPages: response.pagination?.totalPages || 1,
-      });
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          'Ошибка при загрузке обращений'
-      );
+      setError(err.response?.data?.message || err.message || 'Ошибка при загрузке чатов');
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters, itemsPerPage]);
+  }, [search, selectedThreadId]);
+
+  const loadThread = useCallback(async (threadId) => {
+    if (!threadId) {
+      setSelectedChat(null);
+      return;
+    }
+    try {
+      const res = await contactService.getThread(threadId);
+      setSelectedChat(res.data || null);
+      await loadThreads();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Ошибка при загрузке переписки');
+    }
+  }, [loadThreads]);
 
   useEffect(() => {
-    loadList();
-  }, [loadList]);
+    loadThreads();
+  }, [loadThreads]);
 
-  const handleFilterChange = (field, value) => {
-    setInputFilters((prev) => ({ ...prev, [field]: value }));
-  };
+  useEffect(() => {
+    loadThread(selectedThreadId);
+  }, [selectedThreadId, loadThread]);
 
-  const handleSearch = () => {
-    setFilters(inputFilters);
-    setCurrentPage(1);
-  };
-
-  const handleResetFilters = () => {
-    const empty = { search: '', isRead: '' };
-    setInputFilters(empty);
-    setFilters(empty);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  const handleItemsPerPageChange = (value) => {
-    const numValue = parseInt(value, 10);
-    if (numValue > 0 && numValue <= 100) {
-      dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1);
-    }
-  };
-
-  const handleMarkRead = async (id) => {
+  const handleSendReply = async (e) => {
+    e.preventDefault();
+    if (!selectedThreadId || !reply.trim()) return;
+    setSending(true);
     try {
-      await contactService.markAsRead(id);
-      await loadList();
+      await contactService.sendAdminMessage(selectedThreadId, reply);
+      setReply('');
+      await loadThread(selectedThreadId);
     } catch (err) {
-      window.alert(
-        err.response?.data?.message ||
-          err.message ||
-          'Не удалось отметить обращение'
-      );
+      setError(err.response?.data?.message || err.message || 'Не удалось отправить сообщение');
+    } finally {
+      setSending(false);
     }
   };
+
+  const handleStartThread = async (e) => {
+    e.preventDefault();
+    if (!startEmail.trim() || !startMessage.trim()) return;
+    setSending(true);
+    setError(null);
+    try {
+      const res = await contactService.startThread({
+        email: startEmail,
+        message: startMessage,
+      });
+      setStartEmail('');
+      setStartMessage('');
+      setSelectedThreadId(res.data?.threadId || null);
+      await loadThreads();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Не удалось создать чат');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const participant = selectedChat?.thread?.participant;
+  const messages = selectedChat?.messages || [];
 
   return (
     <div>
@@ -123,162 +110,126 @@ const ContactRequests = () => {
       <main className="page-container">
         <div className="contact-requests-page">
           <div className="contact-requests-header">
-            <h1>Обращения с сайта</h1>
+            <h1>Обращения</h1>
+            <p>Переписка с участниками в формате чатов.</p>
           </div>
 
           {error && <div className="contact-requests-error">{error}</div>}
 
-          <div className="contact-requests-filters">
-            <div className="contact-requests-filter-row">
-              <label className="contact-requests-label">
-                Поиск по тексту
+          <section className="contact-start-card">
+            <h2>Написать участнику первым</h2>
+            <form className="contact-start-form" onSubmit={handleStartThread}>
+              <input
+                type="email"
+                value={startEmail}
+                onChange={(e) => setStartEmail(e.target.value)}
+                placeholder="Email участника в системе"
+                required
+              />
+              <input
+                value={startMessage}
+                onChange={(e) => setStartMessage(e.target.value)}
+                placeholder="Первое сообщение"
+                required
+              />
+              <button type="submit" className="contact-requests-btn" disabled={sending}>
+                Отправить
+              </button>
+            </form>
+          </section>
+
+          <div className="contact-chat-admin">
+            <aside className="contact-thread-list">
+              <div className="contact-thread-search">
                 <input
-                  type="text"
-                  className="contact-requests-input"
-                  value={inputFilters.search}
-                  onChange={(e) =>
-                    handleFilterChange('search', e.target.value)
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSearch();
-                  }}
-                  placeholder="Имя, e-mail, сообщение…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Поиск по имени или email"
                 />
-              </label>
-              <label className="contact-requests-label">
-                Статус
-                <select
-                  className="contact-requests-input"
-                  value={inputFilters.isRead}
-                  onChange={(e) =>
-                    handleFilterChange('isRead', e.target.value)
-                  }
-                >
-                  <option value="">Все</option>
-                  <option value="false">Непрочитанные</option>
-                  <option value="true">Прочитанные</option>
-                </select>
-              </label>
-            </div>
-            <div className="contact-requests-filter-actions">
-              <button
-                type="button"
-                className="contact-requests-btn"
-                onClick={handleSearch}
-              >
-                Применить
-              </button>
-              <button
-                type="button"
-                className="contact-requests-btn contact-requests-btn--ghost"
-                onClick={handleResetFilters}
-              >
-                Сбросить
-              </button>
-              <label className="contact-requests-label contact-requests-label--inline">
-                На странице
-                <select
-                  className="contact-requests-input contact-requests-input--narrow"
-                  value={itemsPerPage}
-                  onChange={(e) =>
-                    handleItemsPerPageChange(e.target.value)
-                  }
-                >
-                  {[5, 10, 20, 50].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                <button type="button" onClick={loadThreads} className="contact-requests-btn">
+                  Найти
+                </button>
+              </div>
+
+              {loading && threads.length === 0 ? (
+                <p className="contact-requests-muted">Загрузка...</p>
+              ) : null}
+
+              {threads.length === 0 && !loading ? (
+                <p className="contact-requests-muted">Чатов пока нет.</p>
+              ) : (
+                <ul>
+                  {threads.map((thread) => (
+                    <li key={thread.id}>
+                      <button
+                        type="button"
+                        className={
+                          selectedThreadId === thread.id
+                            ? 'contact-thread-item contact-thread-item--active'
+                            : 'contact-thread-item'
+                        }
+                        onClick={() => setSelectedThreadId(thread.id)}
+                      >
+                        <span className="contact-thread-name">
+                          {thread.participant?.fullName || 'Участник'}
+                          {thread.unreadCount > 0 && (
+                            <span className="contact-thread-badge">{thread.unreadCount}</span>
+                          )}
+                        </span>
+                        <span className="contact-thread-email">{thread.participant?.email}</span>
+                        <span className="contact-thread-preview">
+                          {thread.lastMessage?.message || 'Нет сообщений'}
+                        </span>
+                      </button>
+                    </li>
                   ))}
-                </select>
-              </label>
-            </div>
+                </ul>
+              )}
+            </aside>
+
+            <section className="contact-chat-panel">
+              {!selectedThreadId ? (
+                <p className="contact-requests-muted">Выберите чат слева.</p>
+              ) : (
+                <>
+                  <div className="contact-chat-admin-head">
+                    <div>
+                      <h2>{participant?.fullName || 'Участник'}</h2>
+                      <p>{participant?.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="contact-chat-admin-messages">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={
+                          message.senderRole === 'admin'
+                            ? 'contact-admin-message contact-admin-message--mine'
+                            : 'contact-admin-message contact-admin-message--participant'
+                        }
+                      >
+                        <p>{message.message}</p>
+                        <span>{formatWhen(message.createdAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <form className="contact-admin-reply" onSubmit={handleSendReply}>
+                    <textarea
+                      value={reply}
+                      onChange={(e) => setReply(e.target.value)}
+                      placeholder="Напишите ответ"
+                      rows={3}
+                    />
+                    <button type="submit" className="contact-requests-btn" disabled={sending}>
+                      {sending ? 'Отправка...' : 'Отправить'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
           </div>
-
-          {loading && !items.length ? (
-            <p className="contact-requests-muted">Загрузка…</p>
-          ) : null}
-
-          {!loading && !items.length && !error ? (
-            <p className="contact-requests-muted">Нет обращений по выбранным условиям.</p>
-          ) : null}
-
-          <ul className="contact-requests-list">
-            {items.map((row) => (
-              <li
-                key={row.id}
-                className={
-                  row.isRead
-                    ? 'contact-requests-card'
-                    : 'contact-requests-card contact-requests-card--unread'
-                }
-              >
-                <div className="contact-requests-card-head">
-                  <span className="contact-requests-when">
-                    {formatWhen(row.createdAt)}
-                  </span>
-                  <span
-                    className={
-                      row.isRead
-                        ? 'contact-requests-badge contact-requests-badge--read'
-                        : 'contact-requests-badge contact-requests-badge--new'
-                    }
-                  >
-                    {row.isRead ? 'Прочитано' : 'Новое'}
-                  </span>
-                </div>
-                <p className="contact-requests-author">
-                  <strong>{row.name}</strong>
-                  {' '}
-                  &lt;{row.email}&gt;
-                </p>
-                {row.participant && (
-                  <p className="contact-requests-participant">
-                    Участник в системе:{' '}
-                    {row.participant.fullName || '—'}{' '}
-                    ({row.participant.email || '—'})
-                  </p>
-                )}
-                <div className="contact-requests-message">{row.message}</div>
-                {!row.isRead && (
-                  <button
-                    type="button"
-                    className="contact-requests-btn contact-requests-btn--small"
-                    onClick={() => handleMarkRead(row.id)}
-                    disabled={loading}
-                  >
-                    Отметить прочитанным
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          {pagination.totalPages > 1 && (
-            <div className="contact-requests-pagination">
-              <button
-                type="button"
-                className="contact-requests-btn contact-requests-btn--ghost"
-                disabled={currentPage <= 1 || loading}
-                onClick={() => handlePageChange(currentPage - 1)}
-              >
-                Назад
-              </button>
-              <span className="contact-requests-pageinfo">
-                Стр. {currentPage} из {pagination.totalPages} (всего{' '}
-                {pagination.total})
-              </span>
-              <button
-                type="button"
-                className="contact-requests-btn contact-requests-btn--ghost"
-                disabled={
-                  currentPage >= pagination.totalPages || loading
-                }
-                onClick={() => handlePageChange(currentPage + 1)}
-              >
-                Вперёд
-              </button>
-            </div>
-          )}
         </div>
       </main>
       <Footer />
