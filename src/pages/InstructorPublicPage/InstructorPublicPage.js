@@ -64,7 +64,7 @@ const InstructorPublicPage = () => {
         <section className="mc-public-card instructor-public-card">
           <h1>{instructor.fullName}</h1>
           <p className="instructor-public-spec">{instructor.specialization}</p>
-          <Link className="instructor-public-link" to="/masterclass">
+          <Link className="instructor-public-link" to={`/participant/classes?instructorId=${id}`}>
             Смотреть мастер-классы →
           </Link>
         </section>

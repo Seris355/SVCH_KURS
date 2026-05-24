@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { masterClassService } from '../../services/masterClassService';
 import { favoriteService } from '../../services/favoriteService';
 import { paymentService } from '../../services/paymentService';
@@ -23,6 +23,7 @@ const defaultFilterState = {
 };
 
 const ParticipantClasses = () => {
+  const [searchParams] = useSearchParams();
   const [masterClasses, setMasterClasses] = useState([]);
   const [myClasses, setMyClasses] = useState([]);
   const [instructors, setInstructors] = useState([]);
@@ -45,6 +46,20 @@ const ParticipantClasses = () => {
   const [inputFilters, setInputFilters] = useState(defaultFilterState);
 
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
+
+  useEffect(() => {
+    const instructorId = parseInt(searchParams.get('instructorId'), 10);
+    if (Number.isNaN(instructorId)) return;
+
+    const nextFilters = {
+      ...defaultFilterState,
+      instructorIds: [instructorId],
+    };
+    setActiveTab('all');
+    setInputFilters(nextFilters);
+    setFilters(nextFilters);
+    setCurrentPage(1);
+  }, [searchParams]);
 
   const loadMasterClasses = useCallback(async () => {
     setLoading(true);
@@ -372,7 +387,14 @@ const ParticipantClasses = () => {
                 <label>Инструкторы:</label>
                 <div className="instructor-filter-list">
                   {instructors.map((ins) => (
-                    <label key={ins.id} className="instructor-filter-item">
+                    <label
+                      key={ins.id}
+                      className={
+                        inputFilters.instructorIds.includes(ins.id)
+                          ? 'instructor-filter-item instructor-filter-item--selected'
+                          : 'instructor-filter-item'
+                      }
+                    >
                       <span>{ins.fullName}</span>
                       <input
                         type="checkbox"
