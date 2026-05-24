@@ -1,9 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { Participant, ParticipantPassword, RefreshToken, RecoveryToken } = require('../models');
+const { Participant, ParticipantPassword, RefreshToken, ContactThread, ContactMessage } = require('../models');
 const { Op } = require('sequelize');
-const { JWT_SECRET, JWT_EXPIRES_IN, REFRESH_EXPIRES_IN_DAYS, RECOVERY_EXPIRES_IN_HOURS } = require('../config/auth');
+const { JWT_SECRET, JWT_EXPIRES_IN, REFRESH_EXPIRES_IN_DAYS } = require('../config/auth');
 const { createError } = require('../utils/errors');
 
 const generateTokens = (user, role) => {
@@ -205,80 +205,34 @@ exports.forgotPassword = async (req, res, next) => {
   }
 
   try {
-    const participant = await Participant.findOne({ where: { email } });
+    const participant = await Participant.findOne({
+      where: { email: { [Op.iLike]: email.trim() } },
+      attributes: ['id', 'fullName', 'email'],
+    });
 
     if (participant) {
-      await RecoveryToken.destroy({
-        where: {
+      const [thread] = await ContactThread.findOrCreate({
+        where: { participantId: participant.id },
+        defaults: {
           participantId: participant.id,
-          used: false,
-          expiresAt: { [Op.gt]: new Date() },
+          lastMessageAt: new Date(),
         },
       });
 
-      const token = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + RECOVERY_EXPIRES_IN_HOURS * 60 * 60 * 1000);
-
-      await RecoveryToken.create({
-        participantId: participant.id,
-        token,
-        expiresAt,
+      const message = await ContactMessage.create({
+        threadId: thread.id,
+        senderRole: 'participant',
+        message: 'Я забыл пароль! Пожалуйста восстановите его!',
+        readByAdmin: false,
+        readByParticipant: true,
       });
 
-      console.log(`[Восстановление пароля] Ссылка: http://localhost:3000/reset-password?token=${token}`);
+      await thread.update({ lastMessageAt: message.createdAt });
     }
 
     res.json({
-      message: 'Если email зарегистрирован, на него отправлена ссылка для восстановления',
+      message: 'Если email зарегистрирован, администратор получит запрос на восстановление пароля',
     });
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.resetPassword = async (req, res, next) => {
-  const { token, new_password } = req.body;
-
-  if (!token || !new_password) {
-    const error = new Error('Токен и новый пароль обязательны');
-    error.status = 400;
-    return next(error);
-  }
-
-  try {
-    const recovery = await RecoveryToken.findOne({
-      where: {
-        token,
-        used: false,
-        expiresAt: { [Op.gt]: new Date() },
-      },
-    });
-
-    if (!recovery) {
-      const error = new Error('Недействительный или истёкший токен восстановления');
-      error.status = 400;
-      return next(error);
-    }
-
-    const participantPassword = await ParticipantPassword.findOne({
-      where: { participantId: recovery.participantId },
-    });
-
-    if (!participantPassword) {
-      const error = new Error('Участник не найден');
-      error.status = 404;
-      return next(error);
-    }
-
-    participantPassword.passwordHash = await bcrypt.hash(new_password, 10);
-    await participantPassword.save();
-
-    recovery.used = true;
-    await recovery.save();
-
-    await RefreshToken.destroy({ where: { participantId: recovery.participantId } });
-
-    res.json({ message: 'Пароль успешно изменён' });
   } catch (err) {
     next(err);
   }

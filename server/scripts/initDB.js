@@ -1,4 +1,4 @@
-const { sequelize, Instructor, Participant, MasterClass, ParticipantPassword, RefreshToken, RecoveryToken } = require('../models');
+const { sequelize, Instructor, Participant, MasterClass, ParticipantPassword, RefreshToken } = require('../models');
 
 async function initDatabase() {
   try {

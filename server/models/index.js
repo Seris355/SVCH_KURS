@@ -5,7 +5,6 @@ const MasterClass = require('./MasterClass');
 const MasterClassParticipant = require('./MasterClassParticipant');
 const ParticipantPassword = require('./ParticipantPassword');
 const RefreshToken = require('./RefreshToken');
-const RecoveryToken = require('./RecoveryToken');
 const Review = require('./Review');
 const Category = require('./Category');
 const Location = require('./Location');
@@ -56,13 +55,6 @@ Participant.hasOne(ParticipantPassword, {
 Participant.hasMany(RefreshToken, {
   foreignKey: 'participantId',
   as: 'refreshTokens',
-  onDelete: 'CASCADE',
-});
-
-// Participant -> RecoveryToken
-Participant.hasMany(RecoveryToken, {
-  foreignKey: 'participantId',
-  as: 'recoveryTokens',
   onDelete: 'CASCADE',
 });
 
@@ -238,7 +230,6 @@ module.exports = {
   MasterClassParticipant,
   ParticipantPassword,
   RefreshToken,
-  RecoveryToken,
   Review,
   Category,
   Location,
