@@ -24,7 +24,7 @@ const ForgotPasswordPage = () => {
 
     try {
       await api.post('/auth/forgot-password', { email });
-      setMessage('Если email зарегистрирован, на него отправлена ссылка для восстановления');
+      setMessage('Если email зарегистрирован, администратор получит запрос и свяжется с вами.');
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка отправки запроса');
     } finally {
@@ -37,14 +37,14 @@ const ForgotPasswordPage = () => {
       <Header />
       <div className="auth-page">
         <div className="auth-form-container">
-        <h2>Восстановление пароля</h2>
+        <h2>Запрос на восстановление пароля</h2>
 
         {message && <div className="success-message">{message}</div>}
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email</label>
+            <label>Email вашего аккаунта</label>
             <input
               type="email"
               value={email}
@@ -55,7 +55,7 @@ const ForgotPasswordPage = () => {
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? 'Отправка...' : 'Отправить ссылку'}
+            {loading ? 'Отправка...' : 'Написать администратору'}
           </button>
         </form>
 

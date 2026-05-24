@@ -23,7 +23,6 @@ import AdminAnalytics from './pages/Admin/Analytics/AdminAnalytics.js';
 import LoginPage from './pages/LoginPage/LoginPage.js';
 import RegisterPage from './pages/RegisterPage/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage.js';
-import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage.js';
 import ChangePasswordPage from './pages/ChangePasswordPage/ChangePasswordPage.js';
 import ParticipantClasses from './pages/ParticipantClasses/ParticipantClasses.js';
 import ParticipantFavorites from './pages/ParticipantFavorites/ParticipantFavorites.js';
@@ -48,7 +47,6 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/tests" element={<Tests />} />
           <Route
             path="/tests/:id"
