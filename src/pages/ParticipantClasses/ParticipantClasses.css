@@ -397,6 +397,18 @@ main.page-container {
   margin-top: 1.25rem;
 }
 
+.enroll-modal-actions .btn-primary,
+.enroll-modal-actions .btn-secondary {
+  min-width: 10.5rem;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
 .participant-payments-block {
   margin-top: 1rem;
 }
