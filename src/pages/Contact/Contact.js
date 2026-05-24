@@ -1,39 +1,56 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../../components/Header/Header.js';
 import { contactService } from '../../services/contactService';
+import { authUtils } from '../../utils/auth';
 import './contact_styles.css';
 
-const initialForm = {
-  name: '',
-  email: '',
-  message: '',
-};
+const formatWhen = (value) =>
+  new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 const Contact = () => {
-  const [form, setForm] = useState(initialForm);
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [error, setError] = useState(null);
+  const user = authUtils.getUser();
+  const isParticipant = authUtils.isLoggedIn() && user.role === 'participant';
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    setFeedback(null);
-    setError(null);
-  };
+  const loadThread = useCallback(async () => {
+    if (!isParticipant) return;
+    try {
+      const res = await contactService.getMyThread();
+      setMessages(res.data?.messages || []);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Не удалось загрузить переписку'
+      );
+    }
+  }, [isParticipant]);
+
+  useEffect(() => {
+    loadThread();
+  }, [loadThread]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!draft.trim()) return;
     setSending(true);
     setFeedback(null);
     setError(null);
     try {
-      await contactService.submit({
-        name: form.name,
-        email: form.email,
-        message: form.message,
-      });
-      setFeedback('Сообщение отправлено. Мы свяжемся с вами при необходимости.');
-      setForm(initialForm);
+      await contactService.sendMyMessage(draft);
+      setFeedback('Сообщение отправлено.');
+      setDraft('');
+      await loadThread();
     } catch (err) {
       const msg =
         err.response?.data?.message ||
@@ -53,60 +70,71 @@ const Contact = () => {
           <h2 className="text1">Контакты</h2>
 
           <div className="contact_feedback_block">
-            <h3 className="contact_feedback_title">Обратная связь</h3>
-            <form className="contact-form" onSubmit={handleSubmit}>
-              <label className="contact-form-label">
-                Имя
-                <input
-                  type="text"
-                  className="contact-form-input"
-                  value={form.name}
-                  onChange={handleChange('name')}
-                  required
-                  autoComplete="name"
-                  maxLength={120}
-                />
-              </label>
-              <label className="contact-form-label">
-                E-mail
-                <input
-                  type="email"
-                  className="contact-form-input"
-                  value={form.email}
-                  onChange={handleChange('email')}
-                  required
-                  autoComplete="email"
-                  maxLength={255}
-                />
-              </label>
-              <label className="contact-form-label">
-                Сообщение
-                <textarea
-                  className="contact-form-textarea"
-                  value={form.message}
-                  onChange={handleChange('message')}
-                  required
-                  rows={5}
-                />
-              </label>
-              {feedback && (
-                <p className="contact-form-success" role="status">
-                  {feedback}
-                </p>
-              )}
-              {error && (
-                <p className="contact-form-error" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="contact-form-submit"
-                disabled={sending}
-              >
-                {sending ? 'Отправка...' : 'Отправить'}
-              </button>
-            </form>
+            <h3 className="contact_feedback_title">Чат с администратором</h3>
+            {!isParticipant ? (
+              <div className="contact-chat-login">
+                <p>Войдите как участник, чтобы написать администратору и видеть историю переписки.</p>
+                <Link className="contact-form-submit" to="/login">
+                  Войти
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="contact-chat-window">
+                  {messages.length === 0 ? (
+                    <p className="contact-chat-empty">Пока сообщений нет. Напишите первый вопрос.</p>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={
+                          message.senderRole === 'participant'
+                            ? 'contact-chat-message contact-chat-message--mine'
+                            : 'contact-chat-message contact-chat-message--admin'
+                        }
+                      >
+                        <p>{message.message}</p>
+                        <span>{formatWhen(message.createdAt)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <form className="contact-form contact-chat-form" onSubmit={handleSubmit}>
+                  <label className="contact-form-label">
+                    Сообщение
+                    <textarea
+                      className="contact-form-textarea"
+                      value={draft}
+                      onChange={(e) => {
+                        setDraft(e.target.value);
+                        setFeedback(null);
+                        setError(null);
+                      }}
+                      required
+                      rows={4}
+                      placeholder="Напишите сообщение администратору"
+                    />
+                  </label>
+                  {feedback && (
+                    <p className="contact-form-success" role="status">
+                      {feedback}
+                    </p>
+                  )}
+                  {error && (
+                    <p className="contact-form-error" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    className="contact-form-submit"
+                    disabled={sending}
+                  >
+                    {sending ? 'Отправка...' : 'Отправить'}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
           <div className="flex_container_for_main">
@@ -136,7 +164,7 @@ const Contact = () => {
               <div className="contact_info">
                 <h3>Запись</h3>
                 <p className="phone">Мастер-классы — в каталоге на сайте</p>
-                <p className="phone">Вопросы — через форму обратной связи</p>
+                <p className="phone">Вопросы — через чат с администратором</p>
               </div>
             </div>
           </div>
