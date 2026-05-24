@@ -3,6 +3,39 @@ const { MasterClass, Instructor, Participant, Schedule, Location, Payment, Revie
 const { Op, Sequelize } = require('sequelize');
 const { resolveUnicodeTtfPath } = require('../utils/pdfFonts');
 
+async function countActiveEnrollment(scheduleId) {
+  return Payment.count({
+    where: {
+      scheduleId,
+      status: { [Op.in]: ['pending', 'paid'] },
+    },
+  });
+}
+
+async function getScheduleEnrollmentCounts(scheduleIds) {
+  const map = new Map();
+  if (!scheduleIds.length) return map;
+
+  const rows = await Payment.findAll({
+    attributes: [
+      'scheduleId',
+      [Sequelize.fn('COUNT', Sequelize.col('Payment.id')), 'cnt'],
+    ],
+    where: {
+      scheduleId: { [Op.in]: scheduleIds },
+      status: { [Op.in]: ['pending', 'paid'] },
+    },
+    group: ['scheduleId'],
+    raw: true,
+  });
+
+  rows.forEach((row) => {
+    map.set(row.scheduleId, parseInt(row.cnt, 10) || 0);
+  });
+
+  return map;
+}
+
 async function getRatingStatsMap(masterClassIds) {
   const map = new Map();
   if (!masterClassIds.length) {
@@ -208,12 +241,32 @@ exports.getMasterClassById = async (req, res) => {
       });
     }
 
+    const scheduleRows = masterClass.schedules || [];
+    const scheduleIds = scheduleRows.map((s) => s.id);
+    const enrollmentCounts = await getScheduleEnrollmentCounts(scheduleIds);
+
+    let viewerEnrolledScheduleIds = [];
     let viewerHasEnrollment = false;
     let viewerHasReview = false;
     let viewerCanSubmitReview = false;
     if (req.user && req.user.role === 'participant') {
       const pid = req.user.id;
-      viewerHasEnrollment = participantIds.includes(pid);
+
+      if (scheduleIds.length > 0) {
+        const viewerPayments = await Payment.findAll({
+          where: {
+            participantId: pid,
+            scheduleId: { [Op.in]: scheduleIds },
+            status: { [Op.in]: ['pending', 'paid'] },
+          },
+          attributes: ['scheduleId'],
+        });
+        viewerEnrolledScheduleIds = viewerPayments.map((p) => p.scheduleId);
+      }
+
+      viewerHasEnrollment =
+        viewerEnrolledScheduleIds.length > 0 || participantIds.includes(pid);
+
       if (viewerHasEnrollment) {
         const existingReview = await Review.findOne({
           where: {
@@ -232,15 +285,34 @@ exports.getMasterClassById = async (req, res) => {
       delete base.participantIds;
     }
 
+    const now = new Date();
+    const schedules = (base.schedules || []).map((schedule) => {
+      const enrolledCount = enrollmentCounts.get(schedule.id) || 0;
+      const capacityLeft = Math.max(0, schedule.maxParticipants - enrolledCount);
+      const isUpcoming = new Date(schedule.startDate) > now;
+      const viewerIsEnrolled = viewerEnrolledScheduleIds.includes(schedule.id);
+
+      return {
+        ...schedule,
+        enrolledCount,
+        capacityLeft,
+        isUpcoming,
+        viewerIsEnrolled,
+        canEnroll: isUpcoming && capacityLeft > 0 && !viewerIsEnrolled,
+      };
+    });
+
     res.json({
       success: true,
       data: {
         ...base,
+        schedules,
         avgRating,
         reviewCount,
         participantCount: participantIds.length,
         participants,
         viewerHasEnrollment,
+        viewerEnrolledScheduleIds,
         viewerHasReview,
         viewerCanSubmitReview,
       },
@@ -463,8 +535,28 @@ exports.enrollParticipant = async (req, res) => {
     const { id } = req.params;
     const { scheduleId } = req.body || {};
     const participantId = req.user.id;
+    const masterClassId = parseInt(id, 10);
 
-    const masterClass = await MasterClass.findByPk(id);
+    if (
+      scheduleId === undefined ||
+      scheduleId === null ||
+      `${scheduleId}`.trim() === ''
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Выберите сеанс для записи',
+      });
+    }
+
+    const sid = parseInt(scheduleId, 10);
+    if (Number.isNaN(sid)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Некорректный идентификатор сеанса',
+      });
+    }
+
+    const masterClass = await MasterClass.findByPk(masterClassId);
 
     if (!masterClass) {
       return res.status(404).json({
@@ -473,67 +565,98 @@ exports.enrollParticipant = async (req, res) => {
       });
     }
 
-    const participantIds = [...(masterClass.participantIds || [])];
-
-    if (participantIds.includes(participantId)) {
+    const schedule = await Schedule.findByPk(sid);
+    if (!schedule || schedule.masterClassId !== masterClassId) {
       return res.status(400).json({
         success: false,
-        message: 'Вы уже записаны на этот мастер-класс',
+        message: 'Сеанс не относится к этому мастер-классу',
       });
     }
 
-    participantIds.push(participantId);
-    await masterClass.update({ participantIds: participantIds });
+    if (new Date(schedule.startDate) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Нельзя записаться на прошедший сеанс',
+      });
+    }
+
+    const existingOnSchedule = await Payment.findOne({
+      where: {
+        participantId,
+        scheduleId: sid,
+        status: { [Op.in]: ['pending', 'paid'] },
+      },
+    });
+
+    if (existingOnSchedule) {
+      return res.status(400).json({
+        success: false,
+        message: 'Вы уже записаны на этот сеанс',
+      });
+    }
+
+    const mcScheduleRows = await Schedule.findAll({
+      where: { masterClassId },
+      attributes: ['id'],
+      raw: true,
+    });
+    const mcScheduleIds = mcScheduleRows.map((row) => row.id);
+
+    if (mcScheduleIds.length > 0) {
+      const existingOnMasterClass = await Payment.findOne({
+        where: {
+          participantId,
+          scheduleId: { [Op.in]: mcScheduleIds },
+          status: { [Op.in]: ['pending', 'paid'] },
+        },
+      });
+
+      if (existingOnMasterClass) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'Вы уже записаны на другой сеанс этого мастер-класса. Для смены даты обратитесь к администратору.',
+        });
+      }
+    }
+
+    const enrolledCount = await countActiveEnrollment(sid);
+    if (enrolledCount >= schedule.maxParticipants) {
+      return res.status(400).json({
+        success: false,
+        message: 'На этом сеансе не осталось свободных мест',
+      });
+    }
 
     let paymentInfo = null;
-    const hasSchedule =
-      scheduleId !== undefined && scheduleId !== null && `${scheduleId}`.trim() !== '';
-
-    if (hasSchedule) {
-      const sid = parseInt(scheduleId, 10);
-      if (Number.isNaN(sid)) {
-        participantIds.splice(participantIds.indexOf(participantId), 1);
-        await masterClass.update({ participantIds: participantIds });
+    try {
+      const payment = await Payment.create({
+        participantId,
+        scheduleId: sid,
+        amount: masterClass.price,
+        status: 'pending',
+      });
+      paymentInfo = {
+        id: payment.id,
+        invoiceCode: payment.invoiceCode,
+        amount: payment.amount,
+        status: payment.status,
+        scheduleId: sid,
+      };
+    } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
         return res.status(400).json({
           success: false,
-          message: 'Некорректный идентификатор сеанса',
+          message: 'Счёт на этот сеанс для вас уже существует',
         });
       }
+      throw error;
+    }
 
-      const schedule = await Schedule.findByPk(sid);
-      if (!schedule || schedule.masterClassId !== parseInt(id, 10)) {
-        participantIds.splice(participantIds.indexOf(participantId), 1);
-        await masterClass.update({ participantIds: participantIds });
-        return res.status(400).json({
-          success: false,
-          message: 'Сеанс не относится к этому мастер-классу',
-        });
-      }
-
-      try {
-        const payment = await Payment.create({
-          participantId,
-          scheduleId: sid,
-          amount: masterClass.price,
-          status: 'pending',
-        });
-        paymentInfo = {
-          id: payment.id,
-          invoiceCode: payment.invoiceCode,
-          amount: payment.amount,
-          status: payment.status,
-        };
-      } catch (error) {
-        participantIds.splice(participantIds.indexOf(participantId), 1);
-        await masterClass.update({ participantIds: participantIds });
-        if (error.name === 'SequelizeUniqueConstraintError') {
-          return res.status(400).json({
-            success: false,
-            message: 'Счёт на этот сеанс для вас уже существует',
-          });
-        }
-        throw error;
-      }
+    const participantIds = [...(masterClass.participantIds || [])];
+    if (!participantIds.includes(participantId)) {
+      participantIds.push(participantId);
+      await masterClass.update({ participantIds });
     }
 
     const updatedMasterClass = await MasterClass.findByPk(id, {
@@ -548,7 +671,7 @@ exports.enrollParticipant = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Вы успешно записались на мастер-класс',
+      message: 'Вы успешно записались на выбранный сеанс',
       data: updatedMasterClass,
       payment: paymentInfo,
     });
@@ -577,12 +700,75 @@ exports.getParticipantMasterClasses = async (req, res) => {
           as: 'instructor',
           attributes: ['id', 'fullName', 'specialization'],
         },
+        {
+          model: Schedule,
+          as: 'schedules',
+          separate: true,
+          order: [['startDate', 'ASC']],
+          include: [
+            {
+              model: Location,
+              as: 'location',
+              attributes: ['id', 'name', 'address'],
+            },
+          ],
+        },
       ],
+    });
+
+    const mcIds = masterClasses.map((mc) => mc.id);
+    const payments = mcIds.length
+      ? await Payment.findAll({
+          where: {
+            participantId,
+            status: { [Op.in]: ['pending', 'paid'] },
+          },
+          include: [
+            {
+              model: Schedule,
+              as: 'schedule',
+              where: { masterClassId: { [Op.in]: mcIds } },
+              attributes: ['id', 'masterClassId', 'startDate', 'endDate'],
+              include: [
+                {
+                  model: Location,
+                  as: 'location',
+                  attributes: ['id', 'name', 'address'],
+                },
+              ],
+            },
+          ],
+        })
+      : [];
+
+    const paymentByMcId = new Map();
+    payments.forEach((payment) => {
+      const mcId = payment.schedule?.masterClassId;
+      if (mcId != null && !paymentByMcId.has(mcId)) {
+        paymentByMcId.set(mcId, payment);
+      }
+    });
+
+    const data = masterClasses.map((masterClass) => {
+      const json = masterClass.toJSON();
+      const enrolledPayment = paymentByMcId.get(json.id);
+      return {
+        ...json,
+        enrolledSchedule: enrolledPayment?.schedule || null,
+        enrolledPayment: enrolledPayment
+          ? {
+              id: enrolledPayment.id,
+              invoiceCode: enrolledPayment.invoiceCode,
+              amount: enrolledPayment.amount,
+              status: enrolledPayment.status,
+            }
+          : null,
+      };
     });
 
     res.json({
       success: true,
-      data: masterClasses,
+      data,
     });
   } catch (error) {
     res.status(500).json({
