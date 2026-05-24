@@ -383,7 +383,7 @@ const ParticipantClasses = () => {
                   placeholder="Название или описание"
                 />
               </div>
-              <div className="filter-group">
+              <div className="filter-group instructor-filter-group">
                 <label>Инструкторы:</label>
                 <div className="instructor-filter-list">
                   {instructors.map((ins) => (
@@ -643,7 +643,11 @@ const ParticipantClasses = () => {
                 isEnrolled(selectedMasterClass.id) && !hasReviewForSelected ? (
                   <ReviewForm
                     masterClassId={selectedMasterClass.id}
-                    onSuccess={() => refreshSelectedDetail(selectedMasterClass.id)}
+                    onSuccess={async () => {
+                      await refreshSelectedDetail(selectedMasterClass.id);
+                      await loadMasterClasses();
+                      await loadMyClasses();
+                    }}
                   />
                 ) : null
               }
