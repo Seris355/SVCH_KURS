@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './MasterClassDetail.css';
 
 const MasterClassDetail = ({
@@ -20,13 +21,15 @@ const MasterClassDetail = ({
     };
   }, [onClose]);
 
+  const overlayDismiss = useOverlayDismiss(onClose);
+
   if (!masterClass) return null;
 
   const avg = masterClass.avgRating;
   const reviews = masterClass.reviews || [];
 
   const modalContent = (
-    <div className="modal-overlay" onClick={onClose} role="presentation">
+    <div className="modal-overlay" role="presentation" {...overlayDismiss}>
       <div
         className="modal-content detail-modal"
         onClick={(e) => e.stopPropagation()}

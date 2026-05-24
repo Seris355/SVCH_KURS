@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './ParticipantDetail.css';
 
 const ParticipantDetail = ({ participant, onClose }) => {
@@ -14,10 +15,12 @@ const ParticipantDetail = ({ participant, onClose }) => {
     };
   }, [onClose]);
 
+  const overlayDismiss = useOverlayDismiss(onClose);
+
   if (!participant) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" {...overlayDismiss}>
       <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Детальная информация об участнике</h2>

@@ -6,6 +6,7 @@ import ParticipantForm from '../../../components/ParticipantForm/ParticipantForm
 import ParticipantList from '../../../components/ParticipantList/ParticipantList';
 import Header from '../../../components/Header/Header';
 import Footer from '../../../components/Footer/Footer';
+import { useOverlayDismiss } from '../../../utils/useOverlayDismiss';
 import './Participants.css';
 
 const Participants = () => {
@@ -139,6 +140,8 @@ const Participants = () => {
     setNewPassword('');
     setConfirmPassword('');
   };
+
+  const passwordOverlayDismiss = useOverlayDismiss(handleClosePasswordDialog);
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -275,7 +278,7 @@ const Participants = () => {
           )}
 
           {showPasswordDialog && (
-            <div className="modal-overlay" onClick={handleClosePasswordDialog}>
+            <div className="modal-overlay" {...passwordOverlayDismiss}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h2>Смена пароля</h2>

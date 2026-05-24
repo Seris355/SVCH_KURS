@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { instructorService } from '../../services/instructorService';
 import { participantService } from '../../services/participantService';
+import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './MasterClassForm.css';
 
 const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
@@ -47,6 +48,8 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
     }
     setServerError(null);
   }, [masterClass]);
+
+  const overlayDismiss = useOverlayDismiss(onClose);
 
   const fetchInstructorsAndParticipants = async () => {
     setLoading(true);
@@ -163,7 +166,7 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
   };
 
   const modalContent = loading ? (
-    <div className="modal-overlay" onClick={onClose} role="presentation">
+    <div className="modal-overlay" role="presentation" {...overlayDismiss}>
       <div
         className="modal-content masterclass-form-modal"
         onClick={(e) => e.stopPropagation()}
@@ -174,7 +177,7 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
       </div>
     </div>
   ) : (
-    <div className="modal-overlay" onClick={onClose} role="presentation">
+    <div className="modal-overlay" role="presentation" {...overlayDismiss}>
       <div
         className="modal-content masterclass-form-modal"
         onClick={(e) => e.stopPropagation()}

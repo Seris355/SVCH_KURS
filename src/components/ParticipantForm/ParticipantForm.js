@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './ParticipantForm.css';
 
 const ParticipantForm = ({ participant, onSubmit, onClose }) => {
@@ -42,6 +43,8 @@ const ParticipantForm = ({ participant, onSubmit, onClose }) => {
     }
     setServerError(null);
   }, [participant]);
+
+  const overlayDismiss = useOverlayDismiss(onClose);
 
   const validate = () => {
     const newErrors = {};
@@ -121,7 +124,7 @@ const ParticipantForm = ({ participant, onSubmit, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" {...overlayDismiss}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{participant ? 'Редактировать участника' : 'Добавить участника'}</h2>
