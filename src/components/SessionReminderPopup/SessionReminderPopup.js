@@ -6,6 +6,8 @@ import './SessionReminderPopup.css';
 
 const STORAGE_KEY = 'dismissedSiteReminders';
 
+const REMINDER_DAYS_AHEAD = 3;
+
 function readDismissedIds() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -75,7 +77,7 @@ const SessionReminderPopup = () => {
       <div className="session-reminder-popup">
         <h2>Напоминание о занятиях</h2>
         <p className="session-reminder-intro">
-          В ближайшие 3 дня у вас запланированы следующие мероприятия:
+          В ближайшие {REMINDER_DAYS_AHEAD} дня у вас запланированы следующие мероприятия:
         </p>
 
         {items.map((item) => (
