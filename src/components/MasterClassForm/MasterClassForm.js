@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { instructorService } from '../../services/instructorService';
 import { participantService } from '../../services/participantService';
 import './MasterClassForm.css';
@@ -18,6 +19,11 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
+
+  useEffect(() => {
+    document.body.classList.add('modal-open');
+    return () => document.body.classList.remove('modal-open');
+  }, []);
 
   useEffect(() => {
     fetchInstructorsAndParticipants();
@@ -149,21 +155,30 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content">
-          <div className="loading">Загрузка...</div>
-        </div>
+  const modalContent = loading ? (
+    <div className="modal-overlay" onClick={onClose} role="presentation">
+      <div
+        className="modal-content masterclass-form-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="loading">Загрузка...</div>
       </div>
-    );
-  }
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content masterclass-form-modal" onClick={(e) => e.stopPropagation()}>
+    </div>
+  ) : (
+    <div className="modal-overlay" onClick={onClose} role="presentation">
+      <div
+        className="modal-content masterclass-form-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="masterclass-form-title"
+      >
         <div className="modal-header">
-          <h2>{masterClass ? 'Редактировать мастер-класс' : 'Добавить мастер-класс'}</h2>
+          <h2 id="masterclass-form-title">
+            {masterClass ? 'Редактировать мастер-класс' : 'Добавить мастер-класс'}
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="masterclass-form">
@@ -264,23 +279,24 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
             <div className="participants-checkboxes">
               {participants.map(participant => (
                 <label key={participant.id} className="participant-checkbox">
+                  <span className="participant-checkbox-label">
+                    {participant.fullName} ({participant.email})
+                  </span>
                   <input
                     type="checkbox"
                     checked={formData.participantIds.includes(participant.id)}
                     onChange={() => handleParticipantChange(participant.id)}
                   />
-                  <span className="checkmark"></span>
-                  {participant.fullName} ({participant.email})
                 </label>
               ))}
             </div>
           </div>
 
           <div className="form-actions">
-            <button type="button" onClick={onClose} className="btn-secondary">
+            <button type="button" onClick={onClose} className="btn-secondary mc-form-btn">
               Отмена
             </button>
-            <button type="submit" className="btn-primary" disabled={submitting}>
+            <button type="submit" className="btn-primary mc-form-btn" disabled={submitting}>
               {submitting ? 'Сохранение...' : (masterClass ? 'Сохранить' : 'Создать')}
             </button>
           </div>
@@ -288,6 +304,8 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default MasterClassForm;
