@@ -151,20 +151,21 @@ main.page-container {
   font-family: var(--font-family-primary);
 }
 
-.tab:hover {
+.tab:hover,
+.tab.active {
   background-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  color: var(--color-text-on-accent);
   border-color: var(--color-accent-primary);
 }
 
 
 .error-message {
-  background-color: rgba(199, 6, 6, 0.2);
-  color: var(--color-text-primary);
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
   padding: 12px;
   border-radius: var(--radius-sm);
   margin-bottom: 20px;
-  border: 1px solid var(--color-accent-primary);
+  border: 1px solid var(--color-error-border);
 }
 
 .loading {
@@ -193,8 +194,8 @@ main.page-container {
 }
 
 .btn-enroll:hover {
-  background-color: #00a861;
-  border-color: #00a861;
+  background-color: var(--color-accent-primary-hover);
+  border-color: var(--color-accent-primary-hover);
 }
 
 .btn-enrolled {
@@ -339,14 +340,14 @@ main.page-container {
 }
 
 .btn-pay:hover:not(:disabled) {
-  background: #00a861;
-  border-color: #00a861;
+  background: var(--color-accent-primary-hover);
+  border-color: var(--color-accent-primary-hover);
 }
 
 .btn-view:hover {
   background-color: var(--color-accent-primary);
   border-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  color: var(--color-text-on-accent);
 }
 
 .enroll-modal-overlay {
@@ -443,7 +444,7 @@ main.page-container {
 .pagination button:hover:not(:disabled) {
   background-color: var(--color-accent-primary);
   border-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  color: var(--color-text-on-accent);
 }
 
 .pagination button:disabled {
@@ -540,7 +541,7 @@ main.page-container {
 .filter-buttons .btn-primary:hover {
   background-color: var(--color-accent-primary);
   border-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  color: var(--color-text-on-accent);
 }
 
 .filter-buttons .btn-secondary {
@@ -550,7 +551,7 @@ main.page-container {
 .filter-buttons .btn-secondary:hover {
   background-color: var(--color-accent-primary);
   border-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
+  color: var(--color-text-on-accent);
 }
 
 @media (max-width: 768px) {
@@ -576,7 +577,7 @@ main.page-container {
 }
 
 .participant-enrollment-badge--warn {
-  background: var(--color-accent-orange);
+  background: var(--color-accent-secondary);
   color: var(--color-text-on-accent);
 }
 
@@ -645,20 +646,21 @@ main.page-container {
 
 .btn-cancel-enrollment {
   padding: 0.55rem 1rem;
-  border: 1px solid var(--color-accent-orange);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-bg-primary);
-  color: var(--color-accent-orange);
+  color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .btn-cancel-enrollment:hover:not(:disabled) {
-  background: var(--color-error-bg);
-  color: var(--color-accent-orange);
+  background: var(--color-bg-muted);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
 }
 
 .btn-cancel-enrollment:disabled {
