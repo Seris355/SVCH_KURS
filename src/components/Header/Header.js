@@ -118,6 +118,9 @@ const Header = () => {
           <NavLink to="/admin/masterclasses" className="hn_link_admin" end>
             Управление мастер-классами
           </NavLink>
+          <NavLink to="/admin/schedules" className="hn_link_admin" end>
+            Сеансы
+          </NavLink>
           <NavLink to="/admin/groups" className="hn_link_admin" end>
             Группы (сеансы)
           </NavLink>
