@@ -13,6 +13,18 @@ import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './ParticipantClasses.css';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
+const MIN_DAYS_BEFORE_MODIFY = 7;
+
+const formatSessionDateTime = (value) => {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const defaultFilterState = {
   search: '',
@@ -35,6 +47,7 @@ const ParticipantClasses = () => {
   const [activeTab, setActiveTab] = useState('all');
 
   const [enrollDialog, setEnrollDialog] = useState(null);
+  const [rescheduleDialog, setRescheduleDialog] = useState(null);
   const [myPayments, setMyPayments] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,6 +63,8 @@ const ParticipantClasses = () => {
 
   const closeEnrollDialog = useCallback(() => setEnrollDialog(null), []);
   const enrollOverlayDismiss = useOverlayDismiss(closeEnrollDialog);
+  const closeRescheduleDialog = useCallback(() => setRescheduleDialog(null), []);
+  const rescheduleOverlayDismiss = useOverlayDismiss(closeRescheduleDialog);
 
   useEffect(() => {
     const instructorId = parseInt(searchParams.get('instructorId'), 10);
@@ -151,19 +166,31 @@ const ParticipantClasses = () => {
   }, [loadMasterClasses, loadMyClasses, loadFavoriteIds, loadPayments, loadInstructors]);
 
   useEffect(() => {
-    if (activeTab === 'payments') {
+    if (activeTab === 'payments' || activeTab === 'my') {
       loadPayments();
+      if (activeTab === 'my') {
+        loadMyClasses();
+      }
     }
-  }, [activeTab, loadPayments]);
+  }, [activeTab, loadPayments, loadMyClasses]);
 
   useEffect(() => {
-    if (!enrollDialog) return undefined;
+    if (!enrollDialog && !rescheduleDialog) return undefined;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setEnrollDialog(null);
+      if (e.key === 'Escape') {
+        setEnrollDialog(null);
+        setRescheduleDialog(null);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enrollDialog]);
+  }, [enrollDialog, rescheduleDialog]);
+
+  const reloadEnrollmentData = async () => {
+    await loadMasterClasses();
+    await loadMyClasses();
+    await loadPayments();
+  };
 
   const handleConfirmEnroll = async () => {
     if (!enrollDialog) return;
@@ -174,10 +201,8 @@ const ParticipantClasses = () => {
         scheduleId: selectedScheduleId,
       });
       setEnrollDialog(null);
-      await loadMasterClasses();
-      await loadMyClasses();
+      await reloadEnrollmentData();
       await loadFavoriteIds();
-      await loadPayments();
       if (response.payment) {
         window.alert(
           `Запись оформлена.\nКод счёта: ${response.payment.invoiceCode}\nСумма к оплате: ${parseFloat(response.payment.amount).toFixed(2)}`
@@ -189,6 +214,112 @@ const ParticipantClasses = () => {
       window.alert(
         err.response?.data?.message || 'Ошибка при записи на мастер-класс'
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEnrollment = async (masterClass) => {
+    const enrollment = getEnrollmentInfo(masterClass);
+    const manage = enrollment.manage;
+    if (enrollment.schedule && manage && !manage.canModify) {
+      window.alert(
+        manage.modifyBlockedReason ||
+          `Отмена доступна не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до сеанса`
+      );
+      return;
+    }
+
+    const sessionLabel = formatSessionDateTime(enrollment.schedule?.startDate);
+    if (
+      !window.confirm(
+        `Отписаться от «${masterClass.name}»?\nСеанс: ${sessionLabel}\n\nЭто действие нельзя отменить.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await masterClassService.cancelEnrollment(masterClass.id);
+      await reloadEnrollmentData();
+      window.alert('Вы отписались от мастер-класса.');
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Не удалось отписаться');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRescheduleDialog = async (masterClass) => {
+    const enrollment = getEnrollmentInfo(masterClass);
+    const manage = enrollment.manage;
+    if (manage && !manage.canModify) {
+      window.alert(
+        manage.modifyBlockedReason ||
+          `Смена даты доступна не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до сеанса`
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await masterClassService.getById(masterClass.id);
+      const full = response.data;
+      const currentScheduleId = Number(
+        enrollment.schedule?.id || getEnrolledScheduleId(full.id)
+      );
+      const schedules = (full.schedules || []).filter((schedule) => {
+        if (Number(schedule.id) === currentScheduleId) return false;
+        if (!schedule.isUpcoming && new Date(schedule.startDate) <= new Date()) return false;
+        if (schedule.canEnroll === false) return false;
+        if (schedule.capacityLeft != null && schedule.capacityLeft <= 0) return false;
+        return new Date(schedule.startDate) > new Date();
+      });
+
+      if (!schedules.length) {
+        window.alert('Нет других доступных сеансов для переноса.');
+        return;
+      }
+
+      setRescheduleDialog({
+        masterClass: full,
+        schedules,
+        selectedScheduleId: schedules[0].id,
+        currentScheduleId,
+        currentSchedule: enrollment.schedule,
+      });
+    } catch {
+      window.alert('Не удалось загрузить расписание');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmReschedule = async () => {
+    if (!rescheduleDialog) return;
+    const { masterClass, selectedScheduleId, currentScheduleId } = rescheduleDialog;
+
+    if (
+      currentScheduleId != null &&
+      Number(selectedScheduleId) === Number(currentScheduleId)
+    ) {
+      setRescheduleDialog(null);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await masterClassService.rescheduleEnrollment(masterClass.id, {
+        scheduleId: selectedScheduleId,
+      });
+      setRescheduleDialog(null);
+      await reloadEnrollmentData();
+      if (!result.data?.unchanged) {
+        window.alert('Дата сеанса успешно изменена.');
+      }
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Не удалось изменить дату сеанса');
     } finally {
       setLoading(false);
     }
@@ -314,10 +445,80 @@ const ParticipantClasses = () => {
     }
   };
 
+  const getPaymentMasterClassId = (payment) =>
+    payment?.schedule?.masterClassId ?? payment?.schedule?.masterClass?.id ?? null;
+
+  const buildEnrollmentManage = (startDate) => {
+    if (!startDate) {
+      return {
+        canModify: false,
+        daysUntilSession: null,
+        modifyBlockedReason: 'Сеанс не назначен',
+      };
+    }
+
+    const daysUntil =
+      (new Date(startDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+
+    if (daysUntil <= 0) {
+      return {
+        canModify: false,
+        daysUntilSession: 0,
+        modifyBlockedReason: 'Сеанс уже начался или прошёл',
+      };
+    }
+
+    if (daysUntil < MIN_DAYS_BEFORE_MODIFY) {
+      return {
+        canModify: false,
+        daysUntilSession: Math.ceil(daysUntil),
+        modifyBlockedReason: `Отмена и смена даты доступны не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до начала сеанса`,
+      };
+    }
+
+    return {
+      canModify: true,
+      daysUntilSession: Math.ceil(daysUntil),
+      modifyBlockedReason: null,
+    };
+  };
+
+  const getEnrollmentInfo = (masterClass) => {
+    if (masterClass.enrolledSchedule?.startDate) {
+      return {
+        schedule: masterClass.enrolledSchedule,
+        manage:
+          masterClass.enrollmentManage ||
+          buildEnrollmentManage(masterClass.enrolledSchedule.startDate),
+        hasActivePayment: Boolean(masterClass.enrolledPayment?.id),
+      };
+    }
+
+    const payment = myPayments.find(
+      (p) =>
+        getPaymentMasterClassId(p) === masterClass.id &&
+        ['pending', 'paid'].includes(p.status)
+    );
+
+    if (payment?.schedule?.startDate) {
+      return {
+        schedule: payment.schedule,
+        manage: buildEnrollmentManage(payment.schedule.startDate),
+        hasActivePayment: true,
+      };
+    }
+
+    return {
+      schedule: null,
+      manage: null,
+      hasActivePayment: false,
+    };
+  };
+
   const getEnrolledScheduleId = (classId) => {
     const payment = myPayments.find(
       (p) =>
-        p.schedule?.masterClassId === classId &&
+        getPaymentMasterClassId(p) === classId &&
         ['pending', 'paid'].includes(p.status)
     );
     return payment?.scheduleId || payment?.schedule?.id || null;
@@ -353,19 +554,14 @@ const ParticipantClasses = () => {
   const hasReviewForSelected =
     selectedMasterClass?.reviews?.some((r) => r.participantId === participantId) ?? false;
 
-  const fmtSchedule = (mc) => {
-    const enrolled = mc.enrolledSchedule?.startDate || mc.schedules?.[0]?.startDate;
-    return enrolled ? new Date(enrolled).toLocaleString('ru-RU') : '—';
-  };
-
   const fmtEnrolledLabel = (classId) => {
     const payment = myPayments.find(
       (p) =>
-        p.schedule?.masterClassId === classId &&
+        getPaymentMasterClassId(p) === classId &&
         ['pending', 'paid'].includes(p.status)
     );
     if (payment?.schedule?.startDate) {
-      return `Записаны: ${new Date(payment.schedule.startDate).toLocaleString('ru-RU')}`;
+      return `Записаны: ${formatSessionDateTime(payment.schedule.startDate)}`;
     }
     return 'Вы записаны';
   };
@@ -583,8 +779,27 @@ const ParticipantClasses = () => {
                 <div className="empty-state">Мастер-классы не найдены</div>
               ) : (
                 <div className="masterclass-grid">
-                  {displayClasses.map((masterClass) => (
-                    <div key={masterClass.id} className="masterclass-card">
+                  {displayClasses.map((masterClass) => {
+                    const enrollment =
+                      activeTab === 'my' ? getEnrollmentInfo(masterClass) : null;
+                    const canManageEnrollment =
+                      activeTab === 'my' &&
+                      Boolean(enrollment?.schedule) &&
+                      enrollment?.manage?.canModify === true;
+                    const manageBlocked =
+                      activeTab === 'my' &&
+                      Boolean(enrollment?.schedule) &&
+                      enrollment?.manage?.canModify === false;
+
+                    return (
+                    <div
+                      key={masterClass.id}
+                      className={
+                        activeTab === 'my'
+                          ? 'masterclass-card masterclass-card--mine'
+                          : 'masterclass-card'
+                      }
+                    >
                       {masterClass.photo && activeTab === 'all' && (
                         <div className="participant-mc-card-photo">
                           <img src={masterClass.photo} alt="" />
@@ -593,6 +808,97 @@ const ParticipantClasses = () => {
                       <div className="masterclass-info">
                         <h3>{masterClass.name}</h3>
                         <p className="masterclass-description">{masterClass.description}</p>
+
+                        {activeTab === 'my' && (
+                          <div className="participant-enrollment-banner">
+                            {enrollment?.schedule ? (
+                              <>
+                                <span className="participant-enrollment-badge">
+                                  Вы записаны на сеанс
+                                </span>
+                                <p className="participant-enrollment-date">
+                                  {formatSessionDateTime(enrollment.schedule.startDate)}
+                                </p>
+                                {enrollment.schedule.endDate && (
+                                  <p className="participant-enrollment-time">
+                                    до {formatSessionDateTime(enrollment.schedule.endDate)}
+                                  </p>
+                                )}
+                                {enrollment.schedule.location?.name && (
+                                  <p className="participant-enrollment-place">
+                                    {enrollment.schedule.location.name}
+                                    {enrollment.schedule.location.address
+                                      ? ` · ${enrollment.schedule.location.address}`
+                                      : ''}
+                                  </p>
+                                )}
+                                {enrollment.manage?.daysUntilSession != null && (
+                                  <p className="participant-enrollment-countdown">
+                                    До начала: {enrollment.manage.daysUntilSession} дн.
+                                  </p>
+                                )}
+                                {manageBlocked && enrollment.manage?.modifyBlockedReason && (
+                                  <p className="participant-enrollment-note">
+                                    {enrollment.manage.modifyBlockedReason}
+                                  </p>
+                                )}
+                                {!manageBlocked && (
+                                  <p className="participant-enrollment-note participant-enrollment-note--ok">
+                                    Отмена и смена даты доступны не позднее чем за{' '}
+                                    {MIN_DAYS_BEFORE_MODIFY} дней до сеанса.
+                                  </p>
+                                )}
+                                <div className="participant-enrollment-actions">
+                                  <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    disabled={loading || !canManageEnrollment}
+                                    onClick={() => openRescheduleDialog(masterClass)}
+                                  >
+                                    Изменить дату
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-cancel-enrollment"
+                                    disabled={loading || !canManageEnrollment}
+                                    onClick={() => handleCancelEnrollment(masterClass)}
+                                  >
+                                    Отписаться
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <span className="participant-enrollment-badge participant-enrollment-badge--warn">
+                                  Дата сеанса не назначена
+                                </span>
+                                <p className="participant-enrollment-note">
+                                  Вы записаны на мастер-класс, но сеанс ещё не выбран.
+                                  Выберите дату в расписании.
+                                </p>
+                                <div className="participant-enrollment-actions">
+                                  <button
+                                    type="button"
+                                    className="btn-primary"
+                                    disabled={loading}
+                                    onClick={() => openEnrollDialog(masterClass)}
+                                  >
+                                    Выбрать дату сеанса
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-cancel-enrollment"
+                                    disabled={loading}
+                                    onClick={() => handleCancelEnrollment(masterClass)}
+                                  >
+                                    Отписаться
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+
                         <div className="masterclass-details">
                           <div className="detail-item">
                             <strong>Цена:</strong> {parseFloat(masterClass.price).toFixed(2)} Br
@@ -604,12 +910,8 @@ const ParticipantClasses = () => {
                           )}
                           {activeTab === 'all' && (
                             <div className="detail-item">
-                              <strong>Ближайший сеанс:</strong> {fmtSchedule(masterClass)}
-                            </div>
-                          )}
-                          {activeTab === 'my' && masterClass.enrolledSchedule?.startDate && (
-                            <div className="detail-item">
-                              <strong>Ваш сеанс:</strong> {fmtSchedule(masterClass)}
+                              <strong>Ближайший сеанс:</strong>{' '}
+                              {formatSessionDateTime(masterClass.schedules?.[0]?.startDate)}
                             </div>
                           )}
                           <div className="detail-item">
@@ -624,15 +926,24 @@ const ParticipantClasses = () => {
                           </div>
                         </div>
                         <div className="card-actions">
-                          <button
-                            type="button"
-                            className="btn-view"
-                            onClick={() => handleView(masterClass)}
-                          >
-                            Просмотр
-                          </button>
+                          {activeTab === 'my' && (
+                            <button
+                              type="button"
+                              className="btn-view"
+                              onClick={() => handleView(masterClass)}
+                            >
+                              Подробнее
+                            </button>
+                          )}
                           {activeTab === 'all' && (
                             <>
+                              <button
+                                type="button"
+                                className="btn-view"
+                                onClick={() => handleView(masterClass)}
+                              >
+                                Просмотр
+                              </button>
                               <button
                                 type="button"
                                 className={
@@ -663,7 +974,8 @@ const ParticipantClasses = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -767,6 +1079,71 @@ const ParticipantClasses = () => {
                     disabled={loading}
                   >
                     {loading ? '…' : 'Записаться и получить счёт'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {rescheduleDialog && (
+            <div
+              className="enroll-modal-overlay"
+              role="presentation"
+              {...rescheduleOverlayDismiss}
+            >
+              <div
+                className="enroll-modal-box"
+                role="dialog"
+                aria-modal="true"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="enroll-modal-title">Изменить дату сеанса</h2>
+                <p>{rescheduleDialog.masterClass.name}</p>
+                {rescheduleDialog.currentSchedule?.startDate && (
+                  <p className="enroll-modal-hint">
+                    Текущий сеанс:{' '}
+                    {formatSessionDateTime(rescheduleDialog.currentSchedule.startDate)}
+                  </p>
+                )}
+                <label className="enroll-modal-label" htmlFor="reschedule-schedule">
+                  Новая дата и место
+                </label>
+                <select
+                  id="reschedule-schedule"
+                  className="enroll-modal-select"
+                  value={rescheduleDialog.selectedScheduleId}
+                  onChange={(e) =>
+                    setRescheduleDialog((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            selectedScheduleId: parseInt(e.target.value, 10),
+                          }
+                        : prev
+                    )
+                  }
+                >
+                  {rescheduleDialog.schedules.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {formatScheduleOption(s)}
+                    </option>
+                  ))}
+                </select>
+                <div className="enroll-modal-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setRescheduleDialog(null)}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleConfirmReschedule}
+                    disabled={loading}
+                  >
+                    {loading ? '…' : 'Сохранить новую дату'}
                   </button>
                 </div>
               </div>
