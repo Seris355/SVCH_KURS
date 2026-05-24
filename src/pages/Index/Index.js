@@ -150,23 +150,6 @@ const Index = () => {
             </Link>
           </div>
         </section>
-
-        <section>
-          <div className="partners">
-            <div className="logo_p">
-              <img src="/images/main_page_images/partner1.png" alt="Партнер 1" className="logos_partners" />
-            </div>
-            <div className="logo_p">
-              <img src="/images/main_page_images/partner2.png" alt="Партнер 2" className="logos_partners" />
-            </div>
-            <div className="logo_p">
-              <img src="/images/main_page_images/partner3.png" alt="Партнер 3" className="logos_partners" />
-            </div>
-            <div className="logo_p">
-              <img src="/images/main_page_images/partnrer4.png" alt="Партнер 4" className="logos_partners" />
-            </div>
-          </div>
-        </section>
       </main>
       <Footer />
     </div>
