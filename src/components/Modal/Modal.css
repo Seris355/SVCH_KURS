@@ -1,32 +1,38 @@
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
-  background: transparent;
+  background: rgba(46, 59, 82, 0.45);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
   z-index: 9999;
   animation: fadeIn var(--transition-normal);
+  box-sizing: border-box;
 }
 
 .modal-content {
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
+  width: min(90%, 500px);
+  max-height: calc(100vh - 3rem);
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   animation: slideIn var(--transition-normal);
+  margin: auto;
+  flex-shrink: 0;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .modal-content h2 {
@@ -34,105 +40,52 @@
   color: var(--color-text-primary);
 }
 
-
-.modal-form, .modal-view {
+.modal-header {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.modal-input, .modal-textarea {
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-base);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  transition: border-color var(--transition-normal);
+.modal-header h2 {
+  margin: 0;
 }
 
-.modal-input:focus, .modal-textarea:focus {
-  border-color: var(--color-accent-primary);
-  outline: none;
-}
-
-.modal-textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-
-.modal-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  justify-content: center;
+.modal-footer {
+  padding-top: var(--spacing-md);
   margin-top: var(--spacing-md);
-}
-
-.modal-actions button {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  transition: all var(--transition-normal);
-}
-
-.modal-actions button:first-child {
-  background-color: var(--color-accent-primary);
-  color: var(--color-text-primary);
-}
-
-.modal-actions button:first-child:hover {
-  background-color: var(--color-accent-primary);
-  transform: translateY(-2px);
-}
-
-.modal-actions button:last-child {
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.modal-actions button:last-child:hover {
-  background-color: var(--color-accent-primary);
-  border-color: var(--color-accent-primary);
-}
-
-
-.highlighted {
-  background-color: var(--color-accent-secondary) !important;
-  border-color: var(--color-accent-primary) !important;
-  animation: pulse 0.5s ease;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-}
-
-.page-container {
+  border-top: 1px solid var(--color-border);
   display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  width: 100%;
+  justify-content: flex-end;
+  gap: 0.75rem;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 @media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    padding: var(--spacing-md);
+  .modal-overlay {
+    padding: 1rem 0.75rem;
   }
-  .modal-actions { flex-direction: column; }
-  .modal-actions button { width: 100%; }
-}
 
-@media (max-width: 480px) {
   .modal-content {
-    padding: var(--spacing-sm);
-    max-height: 85vh;
-  }
-  .modal-input, .modal-textarea {
-    font-size: var(--font-size-sm);
+    width: 100%;
+    max-height: calc(100vh - 2rem);
+    padding: var(--spacing-md);
   }
 }
