@@ -14,6 +14,8 @@ const Payment = require('./Payment');
 const MasterClassCategory = require('./MasterClassCategory');
 const Favorite = require('./Favorite');
 const ContactRequest = require('./ContactRequest');
+const ContactThread = require('./ContactThread');
+const ContactMessage = require('./ContactMessage');
 const Test = require('./Test');
 const Question = require('./Question');
 const Answer = require('./Answer');
@@ -166,6 +168,26 @@ ContactRequest.belongsTo(Participant, {
   as: 'participant',
 });
 
+// Contact chat
+Participant.hasOne(ContactThread, {
+  foreignKey: 'participantId',
+  as: 'contactThread',
+  onDelete: 'CASCADE',
+});
+ContactThread.belongsTo(Participant, {
+  foreignKey: 'participantId',
+  as: 'participant',
+});
+ContactThread.hasMany(ContactMessage, {
+  foreignKey: 'threadId',
+  as: 'messages',
+  onDelete: 'CASCADE',
+});
+ContactMessage.belongsTo(ContactThread, {
+  foreignKey: 'threadId',
+  as: 'thread',
+});
+
 // Test -> Question -> Answer
 Test.hasMany(Question, {
   foreignKey: 'testId',
@@ -225,6 +247,8 @@ module.exports = {
   MasterClassCategory,
   Favorite,
   ContactRequest,
+  ContactThread,
+  ContactMessage,
   Test,
   Question,
   Answer,
