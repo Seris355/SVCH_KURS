@@ -10,6 +10,12 @@ import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { authUtils } from '../../utils/auth';
 import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
+import {
+  filterBookableSchedules,
+  getNearestUpcomingSchedule,
+  isSessionPast,
+} from '../../utils/scheduleDates';
+import { useSessionReminders, REMINDER_DAYS_AHEAD } from '../../hooks/useSessionReminders';
 import './ParticipantClasses.css';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -65,6 +71,9 @@ const ParticipantClasses = () => {
   const enrollOverlayDismiss = useOverlayDismiss(closeEnrollDialog);
   const closeRescheduleDialog = useCallback(() => setRescheduleDialog(null), []);
   const rescheduleOverlayDismiss = useOverlayDismiss(closeRescheduleDialog);
+  const { allItems: reminderItems, reloadReminders } = useSessionReminders({
+    enabled: authUtils.isLoggedIn() && authUtils.getUser()?.role === 'participant',
+  });
 
   useEffect(() => {
     const instructorId = parseInt(searchParams.get('instructorId'), 10);
@@ -190,6 +199,7 @@ const ParticipantClasses = () => {
     await loadMasterClasses();
     await loadMyClasses();
     await loadPayments();
+    await reloadReminders();
   };
 
   const handleConfirmEnroll = async () => {
@@ -269,12 +279,8 @@ const ParticipantClasses = () => {
       const currentScheduleId = Number(
         enrollment.schedule?.id || getEnrolledScheduleId(full.id)
       );
-      const schedules = (full.schedules || []).filter((schedule) => {
-        if (Number(schedule.id) === currentScheduleId) return false;
-        if (!schedule.isUpcoming && new Date(schedule.startDate) <= new Date()) return false;
-        if (schedule.canEnroll === false) return false;
-        if (schedule.capacityLeft != null && schedule.capacityLeft <= 0) return false;
-        return new Date(schedule.startDate) > new Date();
+      const schedules = filterBookableSchedules(full.schedules || [], {
+        excludeScheduleId: currentScheduleId,
       });
 
       if (!schedules.length) {
@@ -527,18 +533,10 @@ const ParticipantClasses = () => {
   const isEnrolled = (classId) =>
     myClasses.some((mc) => mc.id === classId) || Boolean(getEnrolledScheduleId(classId));
 
-  const getBookableSchedules = (schedules, classId) => {
-    const enrolledScheduleId = getEnrolledScheduleId(classId);
-    const now = new Date();
-
-    return (schedules || []).filter((schedule) => {
-      if (enrolledScheduleId && schedule.id === enrolledScheduleId) return false;
-      if (new Date(schedule.startDate) <= now) return false;
-      if (schedule.capacityLeft != null && schedule.capacityLeft <= 0) return false;
-      if (schedule.canEnroll === false) return false;
-      return true;
+  const getBookableSchedules = (schedules, classId) =>
+    filterBookableSchedules(schedules, {
+      excludeScheduleId: getEnrolledScheduleId(classId),
     });
-  };
 
   const formatScheduleOption = (schedule) => {
     const dateLabel = new Date(schedule.startDate).toLocaleString('ru-RU');
@@ -611,6 +609,23 @@ const ParticipantClasses = () => {
               Мои счета ({myPayments.length})
             </button>
           </div>
+
+          {activeTab === 'my' && reminderItems.length > 0 && (
+            <div className="participant-reminder-panel">
+              <h3>Напоминание о занятиях</h3>
+              <p className="participant-reminder-panel-intro">
+                В ближайшие {REMINDER_DAYS_AHEAD} дня у вас запланированы следующие мероприятия:
+              </p>
+              {reminderItems.map((item) => (
+                <div key={item.scheduleId} className="participant-reminder-panel-item">
+                  <strong>{item.masterClassName}</strong>
+                  <p>Дата: {formatSessionDateTime(item.startDate)}</p>
+                  {item.location && <p>Место: {item.location}</p>}
+                  <p>{item.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {activeTab === 'all' && (
             <div className="filters">
@@ -782,14 +797,23 @@ const ParticipantClasses = () => {
                   {displayClasses.map((masterClass) => {
                     const enrollment =
                       activeTab === 'my' ? getEnrollmentInfo(masterClass) : null;
+                    const enrollmentIsPast =
+                      activeTab === 'my' &&
+                      Boolean(
+                        enrollment?.schedule?.isPast ||
+                          isSessionPast(enrollment?.schedule?.startDate)
+                      );
                     const canManageEnrollment =
                       activeTab === 'my' &&
                       Boolean(enrollment?.schedule) &&
+                      !enrollmentIsPast &&
                       enrollment?.manage?.canModify === true;
                     const manageBlocked =
                       activeTab === 'my' &&
                       Boolean(enrollment?.schedule) &&
+                      !enrollmentIsPast &&
                       enrollment?.manage?.canModify === false;
+                    const nearestUpcoming = getNearestUpcomingSchedule(masterClass.schedules);
 
                     return (
                     <div
@@ -810,13 +834,31 @@ const ParticipantClasses = () => {
                         <p className="masterclass-description">{masterClass.description}</p>
 
                         {activeTab === 'my' && (
-                          <div className="participant-enrollment-banner">
+                          <div
+                            className={
+                              enrollmentIsPast
+                                ? 'participant-enrollment-banner participant-enrollment-banner--past'
+                                : 'participant-enrollment-banner'
+                            }
+                          >
                             {enrollment?.schedule ? (
                               <>
-                                <span className="participant-enrollment-badge">
-                                  Вы записаны на сеанс
+                                <span
+                                  className={
+                                    enrollmentIsPast
+                                      ? 'participant-enrollment-badge participant-enrollment-badge--past'
+                                      : 'participant-enrollment-badge'
+                                  }
+                                >
+                                  {enrollmentIsPast ? 'Пройдено' : 'Вы записаны на сеанс'}
                                 </span>
-                                <p className="participant-enrollment-date">
+                                <p
+                                  className={
+                                    enrollmentIsPast
+                                      ? 'participant-enrollment-date participant-enrollment-date--past'
+                                      : 'participant-enrollment-date'
+                                  }
+                                >
                                   {formatSessionDateTime(enrollment.schedule.startDate)}
                                 </p>
                                 {enrollment.schedule.endDate && (
@@ -832,22 +874,28 @@ const ParticipantClasses = () => {
                                       : ''}
                                   </p>
                                 )}
-                                {enrollment.manage?.daysUntilSession != null && (
+                                {!enrollmentIsPast && enrollment.manage?.daysUntilSession != null && (
                                   <p className="participant-enrollment-countdown">
                                     До начала: {enrollment.manage.daysUntilSession} дн.
                                   </p>
                                 )}
-                                {manageBlocked && enrollment.manage?.modifyBlockedReason && (
+                                {enrollmentIsPast && (
+                                  <p className="participant-enrollment-note">
+                                    Сеанс уже прошёл. Изменить дату или отписаться нельзя.
+                                  </p>
+                                )}
+                                {!enrollmentIsPast && manageBlocked && enrollment.manage?.modifyBlockedReason && (
                                   <p className="participant-enrollment-note">
                                     {enrollment.manage.modifyBlockedReason}
                                   </p>
                                 )}
-                                {!manageBlocked && (
+                                {!enrollmentIsPast && !manageBlocked && (
                                   <p className="participant-enrollment-note participant-enrollment-note--ok">
                                     Отмена и смена даты доступны не позднее чем за{' '}
                                     {MIN_DAYS_BEFORE_MODIFY} дней до сеанса.
                                   </p>
                                 )}
+                                {!enrollmentIsPast && (
                                 <div className="participant-enrollment-actions">
                                   <button
                                     type="button"
@@ -866,6 +914,7 @@ const ParticipantClasses = () => {
                                     Отписаться
                                   </button>
                                 </div>
+                                )}
                               </>
                             ) : (
                               <>
@@ -911,7 +960,9 @@ const ParticipantClasses = () => {
                           {activeTab === 'all' && (
                             <div className="detail-item">
                               <strong>Ближайший сеанс:</strong>{' '}
-                              {formatSessionDateTime(masterClass.schedules?.[0]?.startDate)}
+                              {nearestUpcoming
+                                ? formatSessionDateTime(nearestUpcoming.startDate)
+                                : '—'}
                             </div>
                           )}
                           <div className="detail-item">

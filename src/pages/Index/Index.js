@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/Header/Header.js';
 import Footer from '../../components/Footer/Footer.js';
 import { masterClassService } from '../../services/masterClassService';
+import { getNearestUpcomingSchedule } from '../../utils/scheduleDates';
 import './style.css';
 
 const Index = () => {
@@ -34,8 +35,10 @@ const Index = () => {
   }, []);
 
   const formatDate = (mc) => {
-    const d = mc.schedules?.[0]?.startDate;
-    return d ? new Date(d).toLocaleString('ru-RU') : '—';
+    const schedule = getNearestUpcomingSchedule(mc.schedules);
+    return schedule?.startDate
+      ? new Date(schedule.startDate).toLocaleString('ru-RU')
+      : '—';
   };
 
   const backgroundStyle = {

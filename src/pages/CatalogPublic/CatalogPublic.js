@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { masterClassService } from '../../services/masterClassService';
+import { getNearestUpcomingSchedule } from '../../utils/scheduleDates';
 import '../ParticipantClasses/ParticipantClasses.css';
 import './CatalogPublic.css';
 
@@ -42,8 +43,10 @@ const CatalogPublic = () => {
   }, [load]);
 
   const fmtDate = (mc) => {
-    const s = mc.schedules?.[0]?.startDate;
-    return s ? new Date(s).toLocaleString('ru-RU') : '—';
+    const schedule = getNearestUpcomingSchedule(mc.schedules);
+    return schedule?.startDate
+      ? new Date(schedule.startDate).toLocaleString('ru-RU')
+      : '—';
   };
 
   return (

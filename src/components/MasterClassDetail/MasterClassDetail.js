@@ -85,11 +85,17 @@ const MasterClassDetail = ({
             </div>
           )}
 
-          {masterClass.schedules && masterClass.schedules.length > 0 && (
+          {masterClass.schedules && masterClass.schedules.length > 0 && (() => {
+            const upcomingSchedules = (masterClass.schedules || []).filter(
+              (schedule) =>
+                schedule?.startDate && new Date(schedule.startDate) > new Date()
+            );
+            if (upcomingSchedules.length === 0) return null;
+            return (
             <div className="detail-field">
               <label>Ближайшие сеансы:</label>
               <ul className="schedules-list">
-                {masterClass.schedules.map((s) => (
+                {upcomingSchedules.map((s) => (
                   <li key={s.id}>
                     {new Date(s.startDate).toLocaleString('ru-RU')}
                     {' — '}
@@ -99,7 +105,8 @@ const MasterClassDetail = ({
                 ))}
               </ul>
             </div>
-          )}
+            );
+          })()}
 
           <div className="detail-field masterclass-reviews-block">
             <label>Отзывы ({reviews.length})</label>
