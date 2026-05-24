@@ -25,6 +25,7 @@ const Participants = () => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [changingPasswordParticipant, setChangingPasswordParticipant] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   // ⬇️ ПАГИНАЦИЯ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
   const [currentPage, setCurrentPage] = useState(1);
@@ -110,6 +111,7 @@ const Participants = () => {
   const handleChangePassword = (participant) => {
     setChangingPasswordParticipant(participant);
     setNewPassword('');
+    setConfirmPassword('');
     setShowPasswordDialog(true);
   };
 
@@ -117,12 +119,17 @@ const Participants = () => {
     setShowPasswordDialog(false);
     setChangingPasswordParticipant(null);
     setNewPassword('');
+    setConfirmPassword('');
   };
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (!newPassword || newPassword.length < 6) {
       alert('Пароль должен содержать минимум 6 символов');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      alert('Пароли не совпадают');
       return;
     }
 
@@ -274,6 +281,21 @@ const Participants = () => {
                       required
                     />
                     <small className="form-hint">Пароль должен содержать минимум 6 символов</small>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="confirmPassword">
+                      Повторите пароль <span className="required">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Повторите новый пароль"
+                      minLength="6"
+                      required
+                    />
                   </div>
 
                   <div className="form-actions">
