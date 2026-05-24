@@ -10,6 +10,6 @@ router.get('/my', verifyToken, requireParticipant, paymentController.myPayments)
 router.get('/', verifyToken, requireAdmin, paymentController.listPayments);
 
 
-router.put('/:id/paid', verifyToken, requireAdmin, paymentController.markPaid);
+router.put('/:id/paid', verifyToken, paymentController.markPaid);
 
 module.exports = router;

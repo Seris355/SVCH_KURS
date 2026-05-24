@@ -72,7 +72,12 @@ exports.markPaid = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const payment = await Payment.findByPk(id);
+    const where = { id };
+    if (req.user.role === 'participant') {
+      where.participantId = req.user.id;
+    }
+
+    const payment = await Payment.findOne({ where });
 
     if (!payment) {
       return res.status(404).json({
