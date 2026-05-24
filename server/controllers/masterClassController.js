@@ -2,6 +2,14 @@ const PDFDocument = require('pdfkit');
 const { MasterClass, Instructor, Participant, Schedule, Location, Payment, Review } = require('../models');
 const { Op, Sequelize } = require('sequelize');
 const { resolveUnicodeTtfPath } = require('../utils/pdfFonts');
+const {
+  assertCanModifyEnrollment,
+  getEnrollmentModifyStatus,
+} = require('../utils/enrollmentPolicy');
+const {
+  reconcileParticipantMcMembership,
+  findActiveEnrollmentPayment,
+} = require('../utils/participantMembership');
 
 async function countActiveEnrollment(scheduleId) {
   return Payment.count({
@@ -684,6 +692,222 @@ exports.enrollParticipant = async (req, res) => {
   }
 };
 
+exports.cancelEnrollment = async (req, res) => {
+  try {
+    const masterClassId = parseInt(req.params.id, 10);
+    const participantId = req.user.id;
+
+    if (Number.isNaN(masterClassId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Некорректный идентификатор мастер-класса',
+      });
+    }
+
+    const payment = await findActiveEnrollmentPayment(participantId, masterClassId);
+
+    if (!payment || !payment.schedule) {
+      const masterClass = await MasterClass.findByPk(masterClassId);
+      if (!masterClass) {
+        return res.status(404).json({
+          success: false,
+          message: 'Мастер-класс не найден',
+        });
+      }
+
+      const participantIds = masterClass.participantIds || [];
+      if (!participantIds.includes(participantId)) {
+        return res.status(404).json({
+          success: false,
+          message: 'Вы не записаны на этот мастер-класс',
+        });
+      }
+
+      await masterClass.update({
+        participantIds: participantIds.filter((id) => id !== participantId),
+      });
+
+      return res.json({
+        success: true,
+        message: 'Вы отписались от мастер-класса',
+      });
+    }
+
+    try {
+      assertCanModifyEnrollment(payment.schedule.startDate);
+    } catch (policyError) {
+      return res.status(policyError.statusCode || 400).json({
+        success: false,
+        message: policyError.message,
+      });
+    }
+
+    await payment.destroy();
+    await reconcileParticipantMcMembership(masterClassId, participantId);
+
+    res.json({
+      success: true,
+      message: 'Вы отписались от мастер-класса',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка при отмене записи',
+      error: error.message,
+    });
+  }
+};
+
+exports.rescheduleEnrollment = async (req, res) => {
+  try {
+    const masterClassId = parseInt(req.params.id, 10);
+    const participantId = req.user.id;
+    const { scheduleId } = req.body || {};
+
+    if (Number.isNaN(masterClassId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Некорректный идентификатор мастер-класса',
+      });
+    }
+
+    if (
+      scheduleId === undefined ||
+      scheduleId === null ||
+      `${scheduleId}`.trim() === ''
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Выберите новый сеанс',
+      });
+    }
+
+    const newScheduleId = parseInt(scheduleId, 10);
+    if (Number.isNaN(newScheduleId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Некорректный идентификатор сеанса',
+      });
+    }
+
+    const payment = await findActiveEnrollmentPayment(participantId, masterClassId);
+    if (!payment || !payment.schedule) {
+      return res.status(404).json({
+        success: false,
+        message: 'Активная запись на этот мастер-класс не найдена',
+      });
+    }
+
+    if (payment.scheduleId === newScheduleId) {
+      return res.json({
+        success: true,
+        message: 'Дата сеанса не изменилась',
+        data: {
+          payment: {
+            id: payment.id,
+            invoiceCode: payment.invoiceCode,
+            amount: payment.amount,
+            status: payment.status,
+          },
+          schedule: payment.schedule,
+          unchanged: true,
+        },
+      });
+    }
+
+    try {
+      assertCanModifyEnrollment(payment.schedule.startDate);
+    } catch (policyError) {
+      return res.status(policyError.statusCode || 400).json({
+        success: false,
+        message: policyError.message,
+      });
+    }
+
+    const newSchedule = await Schedule.findByPk(newScheduleId);
+    if (!newSchedule || newSchedule.masterClassId !== masterClassId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Сеанс не относится к этому мастер-классу',
+      });
+    }
+
+    if (new Date(newSchedule.startDate) <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Нельзя перенести запись на прошедший сеанс',
+      });
+    }
+
+    const enrolledCount = await countActiveEnrollment(newScheduleId);
+    if (enrolledCount >= newSchedule.maxParticipants) {
+      return res.status(400).json({
+        success: false,
+        message: 'На выбранном сеансе не осталось свободных мест',
+      });
+    }
+
+    const staleCancelled = await Payment.findOne({
+      where: {
+        participantId,
+        scheduleId: newScheduleId,
+        status: 'cancelled',
+      },
+    });
+    if (staleCancelled) {
+      await staleCancelled.destroy();
+    }
+
+    try {
+      await payment.update({ scheduleId: newScheduleId });
+    } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({
+          success: false,
+          message: 'На этот сеанс уже есть запись',
+        });
+      }
+      throw error;
+    }
+
+    const updatedPayment = await Payment.findByPk(payment.id, {
+      include: [
+        {
+          model: Schedule,
+          as: 'schedule',
+          include: [
+            {
+              model: Location,
+              as: 'location',
+              attributes: ['id', 'name', 'address'],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.json({
+      success: true,
+      message: 'Дата сеанса успешно изменена',
+      data: {
+        payment: {
+          id: updatedPayment.id,
+          invoiceCode: updatedPayment.invoiceCode,
+          amount: updatedPayment.amount,
+          status: updatedPayment.status,
+        },
+        schedule: updatedPayment.schedule,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка при смене даты сеанса',
+      error: error.message,
+    });
+  }
+};
+
 exports.getParticipantMasterClasses = async (req, res) => {
   try {
     const participantId = req.user.id;
@@ -752,6 +976,14 @@ exports.getParticipantMasterClasses = async (req, res) => {
     const data = masterClasses.map((masterClass) => {
       const json = masterClass.toJSON();
       const enrolledPayment = paymentByMcId.get(json.id);
+      const enrollmentManage = enrolledPayment?.schedule?.startDate
+        ? getEnrollmentModifyStatus(enrolledPayment.schedule.startDate)
+        : {
+            canModify: false,
+            daysUntilSession: null,
+            modifyBlockedReason: null,
+          };
+
       return {
         ...json,
         enrolledSchedule: enrolledPayment?.schedule || null,
@@ -761,8 +993,10 @@ exports.getParticipantMasterClasses = async (req, res) => {
               invoiceCode: enrolledPayment.invoiceCode,
               amount: enrolledPayment.amount,
               status: enrolledPayment.status,
+              scheduleId: enrolledPayment.scheduleId,
             }
           : null,
+        enrollmentManage,
       };
     });
 

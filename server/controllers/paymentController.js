@@ -1,4 +1,4 @@
-const { Payment, Participant, Schedule, MasterClass } = require('../models');
+const { Payment, Participant, Schedule, MasterClass, Location } = require('../models');
 const { Op } = require('sequelize');
 
 exports.listPayments = async (req, res) => {
@@ -123,12 +123,17 @@ exports.myPayments = async (req, res) => {
         {
           model: Schedule,
           as: 'schedule',
-          attributes: ['id', 'startDate', 'endDate'],
+          attributes: ['id', 'masterClassId', 'startDate', 'endDate'],
           include: [
             {
               model: MasterClass,
               as: 'masterClass',
               attributes: ['id', 'name'],
+            },
+            {
+              model: Location,
+              as: 'location',
+              attributes: ['id', 'name', 'address'],
             },
           ],
         },

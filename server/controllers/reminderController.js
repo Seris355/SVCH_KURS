@@ -1,6 +1,8 @@
 const { Op } = require('sequelize');
 const { Payment, Schedule, MasterClass, Location } = require('../models');
 
+const { REMINDER_DAYS_AHEAD } = require('../utils/enrollmentPolicy');
+
 function formatReminder(schedule) {
   const locationParts = [];
   if (schedule.location?.name) locationParts.push(schedule.location.name);
@@ -23,7 +25,7 @@ exports.getUpcomingReminders = async (req, res) => {
   try {
     const participantId = req.user.id;
     const now = new Date();
-    const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const inThreeDays = new Date(now.getTime() + REMINDER_DAYS_AHEAD * 24 * 60 * 60 * 1000);
 
     const dateFilter = {
       startDate: {

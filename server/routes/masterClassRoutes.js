@@ -15,6 +15,8 @@ router.get('/:id/exists', masterClassController.checkMasterClassExists);
 router.get('/:id', optionalAttachUser, masterClassController.getMasterClassById);
 router.post('/', verifyToken, requireAdmin, masterClassController.createMasterClass);
 router.post('/:id/enroll', verifyToken, requireParticipant, masterClassController.enrollParticipant);
+router.post('/:id/cancel-enrollment', verifyToken, requireParticipant, masterClassController.cancelEnrollment);
+router.put('/:id/reschedule', verifyToken, requireParticipant, masterClassController.rescheduleEnrollment);
 router.put('/:id', verifyToken, requireAdmin, masterClassController.updateMasterClass);
 router.delete('/:id', verifyToken, requireAdmin, masterClassController.deleteMasterClass);
 module.exports = router;
