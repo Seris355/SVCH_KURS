@@ -165,7 +165,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
   padding: 0.35rem 0;
   border-bottom: 1px solid #eee;
 }
@@ -178,15 +178,20 @@
 .tb-checkbox {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.2rem;
   font-size: 0.88rem;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.tb-checkbox input {
+  margin: 0;
 }
 
 .tb-add-a {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
   align-items: center;
   margin-top: 0.5rem;
 }
@@ -195,6 +200,12 @@
   flex: 1;
   min-width: 160px;
   padding: 0.35rem 0.5rem;
+}
+
+.tb-add-a .btn-secondary {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+  flex: 0 0 auto;
 }
 
 .tb-link-del {
