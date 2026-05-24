@@ -5,6 +5,7 @@ import Footer from '../../components/Footer/Footer';
 import { masterClassService } from '../../services/masterClassService';
 import { reviewService } from '../../services/reviewService';
 import { authUtils } from '../../utils/auth';
+import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './MasterClassPublicPage.css';
 
 const formatDateTime = (value) =>
@@ -29,6 +30,9 @@ const MasterClassPublicPage = () => {
   const [enrollDialog, setEnrollDialog] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState(null);
+
+  const closeEnrollDialog = useCallback(() => setEnrollDialog(null), []);
+  const enrollOverlayDismiss = useOverlayDismiss(closeEnrollDialog, enrolling);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,20 +98,21 @@ const MasterClassPublicPage = () => {
   const user = authUtils.getUser();
   const isParticipant = authUtils.isLoggedIn() && user.role === 'participant';
 
-  const openEnrollModal = () => {
+  const openEnrollModal = (preselectedScheduleId = null) => {
     if (!data) return;
-    const now = new Date();
-    const upcoming = (data.schedules || []).filter((s) => new Date(s.startDate) > now);
+    const upcoming = (data.schedules || []).filter((s) => s.canEnroll);
     if (upcoming.length === 0) {
       setEnrollError(
-        'Нет будущих сеансов для записи. Попробуйте позже или откройте каталог в личном кабинете.'
+        data.viewerHasEnrollment
+          ? 'Вы уже записаны на сеанс этого мастер-класса.'
+          : 'Нет доступных сеансов для записи. Попробуйте позже или обратитесь к администратору.'
       );
       return;
     }
     setEnrollError(null);
     setEnrollDialog({
       schedules: upcoming,
-      selectedScheduleId: upcoming[0].id,
+      selectedScheduleId: preselectedScheduleId || upcoming[0].id,
     });
   };
 
@@ -116,11 +121,16 @@ const MasterClassPublicPage = () => {
     setEnrolling(true);
     setEnrollError(null);
     try {
-      await masterClassService.enroll(Number(id), {
+      const response = await masterClassService.enroll(Number(id), {
         scheduleId: enrollDialog.selectedScheduleId,
       });
       setEnrollDialog(null);
       await load();
+      if (response.payment) {
+        setFormMessage(
+          `Запись оформлена. Код счёта: ${response.payment.invoiceCode}`
+        );
+      }
     } catch (err) {
       setEnrollError(
         err.response?.data?.message ||
@@ -131,6 +141,8 @@ const MasterClassPublicPage = () => {
       setEnrolling(false);
     }
   };
+
+  const enrolledSchedule = (data?.schedules || []).find((s) => s.viewerIsEnrolled);
 
   const renderEnrollActions = () => {
     if (!isParticipant) {
@@ -149,7 +161,12 @@ const MasterClassPublicPage = () => {
     if (data.viewerHasEnrollment) {
       return (
         <>
-          <p className="mc-public-status-note">Вы уже записаны на этот мастер-класс.</p>
+          <p className="mc-public-status-note">
+            Вы записаны на сеанс
+            {enrolledSchedule
+              ? `: ${formatDateTime(enrolledSchedule.startDate)}`
+              : '.'}
+          </p>
           <Link className="btn-primary mc-public-btn-full" to="/participant/classes">
             Мои мастер-классы
           </Link>
@@ -157,11 +174,23 @@ const MasterClassPublicPage = () => {
       );
     }
 
+    const hasBookableSessions = (data.schedules || []).some((s) => s.canEnroll);
+
     return (
       <>
-        <button type="button" className="btn-primary mc-public-btn-full" onClick={openEnrollModal}>
-          Записаться
-        </button>
+        {hasBookableSessions ? (
+          <button
+            type="button"
+            className="btn-primary mc-public-btn-full"
+            onClick={() => openEnrollModal()}
+          >
+            Выбрать дату и записаться
+          </button>
+        ) : (
+          <p className="mc-public-status-note">
+            Сейчас нет свободных сеансов для записи.
+          </p>
+        )}
         <Link className="btn-secondary mc-public-btn-full" to="/participant/classes">
           Каталог в личном кабинете
         </Link>
@@ -273,10 +302,20 @@ const MasterClassPublicPage = () => {
 
         {data.schedules && data.schedules.length > 0 && (
           <section className="mc-public-card">
-            <h2 className="mc-public-section-title">Расписание</h2>
+            <h2 className="mc-public-section-title">Расписание сеансов</h2>
+            <p className="mc-public-hint">
+              Выберите удобную дату и запишитесь на конкретный сеанс.
+            </p>
             <div className="mc-public-schedule-grid">
               {data.schedules.map((schedule) => (
-                <article key={schedule.id} className="mc-public-schedule-item">
+                <article
+                  key={schedule.id}
+                  className={
+                    schedule.viewerIsEnrolled
+                      ? 'mc-public-schedule-item mc-public-schedule-item--enrolled'
+                      : 'mc-public-schedule-item'
+                  }
+                >
                   <p className="mc-public-schedule-date">
                     {formatDateTime(schedule.startDate)}
                   </p>
@@ -289,6 +328,34 @@ const MasterClassPublicPage = () => {
                   {schedule.location?.address && (
                     <p className="mc-public-schedule-address">{schedule.location.address}</p>
                   )}
+                  <p className="mc-public-schedule-capacity">
+                    Свободно мест: {schedule.capacityLeft ?? '—'} из {schedule.maxParticipants}
+                  </p>
+                  {isParticipant && schedule.viewerIsEnrolled && (
+                    <p className="mc-public-schedule-status">Вы записаны на этот сеанс</p>
+                  )}
+                  {isParticipant && schedule.canEnroll && !data.viewerHasEnrollment && (
+                    <button
+                      type="button"
+                      className="btn-primary mc-public-schedule-enroll-btn"
+                      onClick={() => openEnrollModal(schedule.id)}
+                    >
+                      Записаться на эту дату
+                    </button>
+                  )}
+                  {isParticipant && !schedule.isUpcoming && !schedule.viewerIsEnrolled && (
+                    <p className="mc-public-schedule-status mc-public-schedule-status--muted">
+                      Сеанс уже прошёл
+                    </p>
+                  )}
+                  {isParticipant &&
+                    schedule.isUpcoming &&
+                    !schedule.viewerIsEnrolled &&
+                    schedule.capacityLeft === 0 && (
+                      <p className="mc-public-schedule-status mc-public-schedule-status--muted">
+                        Мест нет
+                      </p>
+                    )}
                 </article>
               ))}
             </div>
@@ -376,7 +443,7 @@ const MasterClassPublicPage = () => {
           <div
             className="mc-public-enroll-overlay"
             role="presentation"
-            onClick={() => !enrolling && setEnrollDialog(null)}
+            {...enrollOverlayDismiss}
           >
             <div
               className="mc-public-enroll-box"
@@ -415,6 +482,9 @@ const MasterClassPublicPage = () => {
                   <option key={schedule.id} value={schedule.id}>
                     {formatDateTime(schedule.startDate)}
                     {schedule.location?.name ? ` — ${schedule.location.name}` : ''}
+                    {schedule.capacityLeft != null
+                      ? ` (свободно: ${schedule.capacityLeft})`
+                      : ''}
                   </option>
                 ))}
               </select>

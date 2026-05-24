@@ -9,6 +9,7 @@ import ReviewForm from '../../components/ReviewForm/ReviewForm';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import { authUtils } from '../../utils/auth';
+import { useOverlayDismiss } from '../../utils/useOverlayDismiss';
 import './ParticipantClasses.css';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -46,6 +47,9 @@ const ParticipantClasses = () => {
   const [inputFilters, setInputFilters] = useState(defaultFilterState);
 
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
+
+  const closeEnrollDialog = useCallback(() => setEnrollDialog(null), []);
+  const enrollOverlayDismiss = useOverlayDismiss(closeEnrollDialog);
 
   useEffect(() => {
     const instructorId = parseInt(searchParams.get('instructorId'), 10);
@@ -195,10 +199,12 @@ const ParticipantClasses = () => {
       setLoading(true);
       const response = await masterClassService.getById(masterClass.id);
       const full = response.data;
-      const schedules = full.schedules || [];
+      const schedules = getBookableSchedules(full.schedules || [], full.id);
       if (!schedules.length) {
         window.alert(
-          'Для этого мастер-класса пока нет сеансов в расписании. Запись с выставлением счёта недоступна — обратитесь к администратору.'
+          isEnrolled(full.id)
+            ? 'Вы уже записаны на сеанс этого мастер-класса.'
+            : 'Для этого мастер-класса сейчас нет доступных сеансов. Обратитесь к администратору.'
         );
         return;
       }
@@ -308,7 +314,38 @@ const ParticipantClasses = () => {
     }
   };
 
-  const isEnrolled = (classId) => myClasses.some((mc) => mc.id === classId);
+  const getEnrolledScheduleId = (classId) => {
+    const payment = myPayments.find(
+      (p) =>
+        p.schedule?.masterClassId === classId &&
+        ['pending', 'paid'].includes(p.status)
+    );
+    return payment?.scheduleId || payment?.schedule?.id || null;
+  };
+
+  const isEnrolled = (classId) =>
+    myClasses.some((mc) => mc.id === classId) || Boolean(getEnrolledScheduleId(classId));
+
+  const getBookableSchedules = (schedules, classId) => {
+    const enrolledScheduleId = getEnrolledScheduleId(classId);
+    const now = new Date();
+
+    return (schedules || []).filter((schedule) => {
+      if (enrolledScheduleId && schedule.id === enrolledScheduleId) return false;
+      if (new Date(schedule.startDate) <= now) return false;
+      if (schedule.capacityLeft != null && schedule.capacityLeft <= 0) return false;
+      if (schedule.canEnroll === false) return false;
+      return true;
+    });
+  };
+
+  const formatScheduleOption = (schedule) => {
+    const dateLabel = new Date(schedule.startDate).toLocaleString('ru-RU');
+    const place = schedule.location?.name ? ` — ${schedule.location.name}` : '';
+    const capacity =
+      schedule.capacityLeft != null ? ` (свободно: ${schedule.capacityLeft})` : '';
+    return `${dateLabel}${place}${capacity}`;
+  };
 
   const user = authUtils.getUser();
   const participantId = user?.id;
@@ -317,8 +354,20 @@ const ParticipantClasses = () => {
     selectedMasterClass?.reviews?.some((r) => r.participantId === participantId) ?? false;
 
   const fmtSchedule = (mc) => {
-    const s = mc.schedules?.[0]?.startDate;
-    return s ? new Date(s).toLocaleString('ru-RU') : '—';
+    const enrolled = mc.enrolledSchedule?.startDate || mc.schedules?.[0]?.startDate;
+    return enrolled ? new Date(enrolled).toLocaleString('ru-RU') : '—';
+  };
+
+  const fmtEnrolledLabel = (classId) => {
+    const payment = myPayments.find(
+      (p) =>
+        p.schedule?.masterClassId === classId &&
+        ['pending', 'paid'].includes(p.status)
+    );
+    if (payment?.schedule?.startDate) {
+      return `Записаны: ${new Date(payment.schedule.startDate).toLocaleString('ru-RU')}`;
+    }
+    return 'Вы записаны';
   };
 
   const displayClasses =
@@ -555,7 +604,12 @@ const ParticipantClasses = () => {
                           )}
                           {activeTab === 'all' && (
                             <div className="detail-item">
-                              <strong>Дата (ближайший сеанс):</strong> {fmtSchedule(masterClass)}
+                              <strong>Ближайший сеанс:</strong> {fmtSchedule(masterClass)}
+                            </div>
+                          )}
+                          {activeTab === 'my' && masterClass.enrolledSchedule?.startDate && (
+                            <div className="detail-item">
+                              <strong>Ваш сеанс:</strong> {fmtSchedule(masterClass)}
                             </div>
                           )}
                           <div className="detail-item">
@@ -600,7 +654,9 @@ const ParticipantClasses = () => {
                                 onClick={() => openEnrollDialog(masterClass)}
                                 disabled={isEnrolled(masterClass.id)}
                               >
-                                {isEnrolled(masterClass.id) ? 'Вы записаны' : 'Записаться'}
+                                {isEnrolled(masterClass.id)
+                                  ? fmtEnrolledLabel(masterClass.id)
+                                  : 'Выбрать дату и записаться'}
                               </button>
                             </>
                           )}
@@ -663,7 +719,7 @@ const ParticipantClasses = () => {
             <div
               className="enroll-modal-overlay"
               role="presentation"
-              onClick={() => setEnrollDialog(null)}
+              {...enrollOverlayDismiss}
             >
               <div
                 className="enroll-modal-box"
@@ -671,8 +727,11 @@ const ParticipantClasses = () => {
                 aria-modal="true"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2 className="enroll-modal-title">Выберите сеанс</h2>
+                <h2 className="enroll-modal-title">Выберите дату сеанса</h2>
                 <p>{enrollDialog.masterClass.name}</p>
+                <p className="enroll-modal-hint">
+                  После записи будет выставлен счёт на выбранный сеанс.
+                </p>
                 <label className="enroll-modal-label" htmlFor="enroll-schedule">
                   Дата и место
                 </label>
@@ -689,8 +748,7 @@ const ParticipantClasses = () => {
                 >
                   {enrollDialog.schedules.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {new Date(s.startDate).toLocaleString('ru-RU')}
-                      {s.location?.name ? ` — ${s.location.name}` : ''}
+                      {formatScheduleOption(s)}
                     </option>
                   ))}
                 </select>
