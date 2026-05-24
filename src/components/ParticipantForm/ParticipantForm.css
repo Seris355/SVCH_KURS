@@ -4,7 +4,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--color-bg-primary);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -21,10 +20,6 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
-}
-
-.modal-overlay {
-  background-color: var(--color-bg-primary);
 }
 
 .modal-header {
@@ -125,6 +120,11 @@
   gap: 10px;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+.form-actions .btn-secondary,
+.form-actions .btn-primary {
+  min-width: 8rem;
 }
 
 

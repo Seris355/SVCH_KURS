@@ -137,6 +137,15 @@ const ParticipantClasses = () => {
     }
   }, [activeTab, loadPayments]);
 
+  useEffect(() => {
+    if (!enrollDialog) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setEnrollDialog(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [enrollDialog]);
+
   const handleConfirmEnroll = async () => {
     if (!enrollDialog) return;
     const { masterClass, selectedScheduleId } = enrollDialog;
@@ -240,11 +249,25 @@ const ParticipantClasses = () => {
     setInputFilters((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleInstructorMultiChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => parseInt(o.value, 10)).filter(
-      (n) => !Number.isNaN(n)
-    );
-    handleFilterChange('instructorIds', selected);
+  const handleInstructorToggle = (instructorId) => {
+    const current = inputFilters.instructorIds || [];
+    const next = current.includes(instructorId)
+      ? current.filter((id) => id !== instructorId)
+      : [...current, instructorId];
+    handleFilterChange('instructorIds', next);
+  };
+
+  const handlePayInvoice = async (paymentId) => {
+    try {
+      setLoading(true);
+      await paymentService.markPaid(paymentId);
+      await loadPayments();
+      window.alert('Счёт отмечен как оплаченный.');
+    } catch (err) {
+      window.alert(err.response?.data?.message || err.message || 'Не удалось оплатить счёт');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSearch = () => {
@@ -342,24 +365,23 @@ const ParticipantClasses = () => {
                       handleSearch();
                     }
                   }}
-                  placeholder="Поиск по названию или описанию..."
+                  placeholder="Название или описание"
                 />
               </div>
               <div className="filter-group">
-                <label>Инструкторы (Ctrl+клик — несколько):</label>
-                <select
-                  className="filter-multiselect"
-                  multiple
-                  size={Math.min(instructors.length, 6) || 3}
-                  value={inputFilters.instructorIds.map(String)}
-                  onChange={handleInstructorMultiChange}
-                >
+                <label>Инструкторы:</label>
+                <div className="instructor-filter-list">
                   {instructors.map((ins) => (
-                    <option key={ins.id} value={ins.id}>
-                      {ins.fullName}
-                    </option>
+                    <label key={ins.id} className="instructor-filter-item">
+                      <span>{ins.fullName}</span>
+                      <input
+                        type="checkbox"
+                        checked={inputFilters.instructorIds.includes(ins.id)}
+                        onChange={() => handleInstructorToggle(ins.id)}
+                      />
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
               <div className="filter-row">
                 <div className="filter-group">
@@ -462,6 +484,18 @@ const ParticipantClasses = () => {
                             </div>
                           )}
                         </div>
+                        {p.status === 'pending' && (
+                          <div className="card-actions">
+                            <button
+                              type="button"
+                              className="btn-pay"
+                              onClick={() => handlePayInvoice(p.id)}
+                              disabled={loading}
+                            >
+                              Оплатить счёт
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

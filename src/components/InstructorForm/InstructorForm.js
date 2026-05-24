@@ -11,6 +11,18 @@ const InstructorForm = ({ instructor, onSubmit, onClose }) => {
   const [serverError, setServerError] = useState(null);
 
   useEffect(() => {
+    document.body.classList.add('modal-open');
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
     if (instructor) {
       setFormData({
         fullName: instructor.fullName || '',
@@ -78,7 +90,7 @@ const InstructorForm = ({ instructor, onSubmit, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{instructor ? 'Редактировать инструктора' : 'Добавить инструктора'}</h2>

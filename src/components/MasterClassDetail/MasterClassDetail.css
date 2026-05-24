@@ -73,6 +73,12 @@
   font-size: 0.9rem;
 }
 
+.reviews-empty {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
 .detail-field label {
   display: block;
   font-weight: 600;

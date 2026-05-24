@@ -78,6 +78,24 @@ const Participants = () => {
     loadParticipants();
   }, [loadParticipants]);
 
+  useEffect(() => {
+    if (!showPasswordDialog) return undefined;
+    document.body.classList.add('modal-open');
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowPasswordDialog(false);
+        setChangingPasswordParticipant(null);
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showPasswordDialog]);
+
   const handleCreate = () => {
     setEditingParticipant(null);
     setShowForm(true);

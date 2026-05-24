@@ -10,8 +10,15 @@ const MasterClassDetail = ({
 }) => {
   useEffect(() => {
     document.body.classList.add('modal-open');
-    return () => document.body.classList.remove('modal-open');
-  }, []);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   if (!masterClass) return null;
 
@@ -91,9 +98,11 @@ const MasterClassDetail = ({
             </div>
           )}
 
-          {reviews.length > 0 && (
-            <div className="detail-field masterclass-reviews-block">
-              <label>Отзывы</label>
+          <div className="detail-field masterclass-reviews-block">
+            <label>Отзывы ({reviews.length})</label>
+            {reviews.length === 0 ? (
+              <p className="reviews-empty">Отзывов по этому мастер-классу пока нет.</p>
+            ) : (
               <ul className="reviews-list">
                 {reviews.map((r) => (
                   <li key={r.id} className="review-item">
@@ -105,8 +114,8 @@ const MasterClassDetail = ({
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            )}
+          </div>
 
           {noteBelowReviews}
 

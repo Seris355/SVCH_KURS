@@ -22,8 +22,15 @@ const MasterClassForm = ({ masterClass, onSubmit, onClose }) => {
 
   useEffect(() => {
     document.body.classList.add('modal-open');
-    return () => document.body.classList.remove('modal-open');
-  }, []);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   useEffect(() => {
     fetchInstructorsAndParticipants();

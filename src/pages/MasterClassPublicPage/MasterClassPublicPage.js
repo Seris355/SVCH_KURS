@@ -57,6 +57,15 @@ const MasterClassPublicPage = () => {
     setEnrollError(null);
   }, [id]);
 
+  useEffect(() => {
+    if (!enrollDialog) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !enrolling) setEnrollDialog(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [enrollDialog, enrolling]);
+
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     setFormMessage(null);

@@ -2,7 +2,9 @@
   padding: 20px;
   width: 100%;
   margin: 0 auto;
-  background-color: var(--color-bg-primary);
+  background:
+    radial-gradient(circle at top left, rgba(0, 190, 110, 0.08), transparent 320px),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   color: var(--color-text-primary);
   min-height: 100vh;
 }
