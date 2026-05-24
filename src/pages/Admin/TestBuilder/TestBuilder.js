@@ -21,7 +21,7 @@ const TestBuilder = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await testService.getAll({ limit: 100, page: 1 });
+      const res = await testService.getAll({ limit: 100, page: 1, includeDrafts: true });
       setTests(res.data || []);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Ошибка списка');
@@ -176,6 +176,35 @@ const TestBuilder = () => {
     }
   };
 
+  const handlePublishTest = async () => {
+    if (!selectedId) return;
+    try {
+      setLoading(true);
+      await testService.publish(selectedId);
+      await loadTests();
+      await loadDetail(selectedId);
+      window.alert('Тест опубликован и доступен участникам');
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Нельзя опубликовать тест');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnpublishTest = async () => {
+    if (!selectedId) return;
+    try {
+      setLoading(true);
+      await testService.unpublish(selectedId);
+      await loadTests();
+      await loadDetail(selectedId);
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Ошибка');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const questions = detail?.questions || [];
 
   return (
@@ -225,6 +254,7 @@ const TestBuilder = () => {
                       onClick={() => setSelectedId(t.id)}
                     >
                       #{t.id} {t.title}
+                      {!t.isPublished && <span className="tb-draft-badge">черновик</span>}
                     </button>
                   </li>
                 ))}
@@ -239,16 +269,52 @@ const TestBuilder = () => {
               {selectedId && detail && (
                 <>
                   <div className="tb-detail-head">
-                    <h2>{detail.title}</h2>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={handleDeleteTest}
-                      disabled={loading}
-                    >
-                      Удалить тест
-                    </button>
+                    <div>
+                      <h2>{detail.title}</h2>
+                      <p className="tb-publish-status">
+                        {detail.isPublished ? (
+                          <span className="tb-status tb-status--published">Опубликован</span>
+                        ) : (
+                          <span className="tb-status tb-status--draft">Черновик — не виден участникам</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="tb-detail-actions">
+                      {detail.isPublished ? (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={handleUnpublishTest}
+                          disabled={loading}
+                        >
+                          Снять с публикации
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={handlePublishTest}
+                          disabled={loading}
+                        >
+                          Опубликовать
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={handleDeleteTest}
+                        disabled={loading}
+                      >
+                        Удалить тест
+                      </button>
+                    </div>
                   </div>
+                  {!detail.isPublished && (
+                    <p className="tb-publish-hint">
+                      Чтобы опубликовать тест: минимум 1 вопрос, у каждого вопроса — минимум 2
+                      ответа и хотя бы один верный.
+                    </p>
+                  )}
                   {detail.description && (
                     <p className="tb-desc">{detail.description}</p>
                   )}

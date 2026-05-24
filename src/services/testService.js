@@ -38,6 +38,16 @@ export const testService = {
   },
 
   
+  publish: async (id) => {
+    const response = await api.post(`/tests/${id}/publish`);
+    return response.data;
+  },
+
+  unpublish: async (id) => {
+    const response = await api.post(`/tests/${id}/unpublish`);
+    return response.data;
+  },
+
   delete: async (id) => {
     const response = await api.delete(`/tests/${id}`);
     return response.data;

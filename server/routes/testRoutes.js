@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const testController = require('../controllers/testController');
 const testQuestionsController = require('../controllers/testQuestionsController');
-const { verifyToken, requireAdmin, requireParticipant } = require('../middleware/authMiddleware');
+const { verifyToken, requireAdmin, requireParticipant, optionalAttachUser } = require('../middleware/authMiddleware');
 
 
-router.get('/', testController.getAllTests);
+router.get('/', optionalAttachUser, testController.getAllTests);
 
 
 router.post('/:id/questions', verifyToken, requireAdmin, testQuestionsController.createQuestion);
@@ -30,6 +30,12 @@ router.get('/:id/take', verifyToken, requireParticipant, testController.getTestF
 
 
 router.post('/:id/submit', verifyToken, requireParticipant, testController.submitTest);
+
+
+router.post('/:id/publish', verifyToken, requireAdmin, testController.publishTest);
+
+
+router.post('/:id/unpublish', verifyToken, requireAdmin, testController.unpublishTest);
 
 
 router.get('/:id', verifyToken, requireAdmin, testController.getTestById);

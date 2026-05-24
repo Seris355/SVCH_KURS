@@ -19,6 +19,11 @@ const Test = sequelize.define('Test', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  isPublished: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   createdAt: {
     type: DataTypes.DATE,
     allowNull: false,

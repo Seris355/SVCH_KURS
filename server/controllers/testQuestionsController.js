@@ -1,4 +1,19 @@
 const { Test, Question, Answer } = require('../models');
+const { validateTestForPublish } = require('../utils/testPublishPolicy');
+const { loadTestWithTree } = require('./testController');
+
+async function unpublishIfInvalid(testId) {
+  const test = await Test.findByPk(testId);
+  if (!test?.isPublished) {
+    return;
+  }
+
+  const full = await loadTestWithTree(testId);
+  const validation = validateTestForPublish(full);
+  if (!validation.ok) {
+    await test.update({ isPublished: false });
+  }
+}
 
 async function resolveNextOrder(Model, fkField, fkValue) {
   const maxIdx = await Model.max('orderIndex', {
@@ -116,7 +131,9 @@ exports.deleteQuestion = async (req, res) => {
       });
     }
 
+    const testId = row.testId;
     await row.destroy();
+    await unpublishIfInvalid(testId);
 
     res.json({
       success: true,
@@ -239,7 +256,17 @@ exports.deleteAnswer = async (req, res) => {
       });
     }
 
+    const question = await Question.findByPk(row.questionId);
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        message: 'Вопрос не найден',
+      });
+    }
+
+    const testId = question.testId;
     await row.destroy();
+    await unpublishIfInvalid(testId);
 
     res.json({
       success: true,

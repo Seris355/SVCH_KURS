@@ -1,5 +1,6 @@
 const { Test, Question, Answer, TestResult } = require('../models');
 const { Op } = require('sequelize');
+const { validateTestForPublish } = require('../utils/testPublishPolicy');
 
 async function loadTestWithTree(id) {
   return Test.findByPk(id, {
@@ -59,6 +60,14 @@ exports.getAllTests = async (req, res) => {
 
     const offset = (page - 1) * limit;
     const where = {};
+    const isAdmin = req.user?.role === 'admin';
+    const includeDrafts =
+      isAdmin &&
+      String(req.query.includeDrafts || '').toLowerCase() === 'true';
+
+    if (!includeDrafts) {
+      where.isPublished = true;
+    }
 
     if (search) {
       where.title = { [Op.iLike]: `%${search}%` };
@@ -130,6 +139,13 @@ exports.getTestForTaking = async (req, res) => {
       });
     }
 
+    if (!test.isPublished) {
+      return res.status(404).json({
+        success: false,
+        message: 'Тест недоступен',
+      });
+    }
+
     const data = stripCorrectFlags(test);
 
     res.json({
@@ -152,6 +168,7 @@ exports.createTest = async (req, res) => {
     const test = await Test.create({
       title,
       description,
+      isPublished: false,
     });
 
     res.status(201).json({
@@ -268,6 +285,13 @@ exports.submitTest = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Тест не найден',
+      });
+    }
+
+    if (!test.isPublished) {
+      return res.status(404).json({
+        success: false,
+        message: 'Тест недоступен',
       });
     }
 
@@ -421,3 +445,69 @@ exports.submitTest = async (req, res) => {
     });
   }
 };
+
+exports.publishTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const test = await loadTestWithTree(id);
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: 'Тест не найден',
+      });
+    }
+
+    const validation = validateTestForPublish(test);
+    if (!validation.ok) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message,
+      });
+    }
+
+    await test.update({ isPublished: true });
+
+    res.json({
+      success: true,
+      message: 'Тест опубликован',
+      data: test,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка при публикации теста',
+      error: error.message,
+    });
+  }
+};
+
+exports.unpublishTest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const test = await Test.findByPk(id);
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: 'Тест не найден',
+      });
+    }
+
+    await test.update({ isPublished: false });
+
+    res.json({
+      success: true,
+      message: 'Тест снят с публикации',
+      data: test,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка при снятии теста с публикации',
+      error: error.message,
+    });
+  }
+};
+
+exports.loadTestWithTree = loadTestWithTree;
