@@ -43,6 +43,18 @@ app.use('/api/admin/reports', require('./routes/adminReportRoutes'));
 app.use('/api/admin/analytics', require('./routes/adminAnalyticsRoutes'));
 app.use('/api/reminders', require('./routes/reminderRoutes'));
 
+app.use((err, req, res, next) => {
+  const status = err.status || 500;
+  if (status >= 500) {
+    console.error(err);
+  }
+
+  res.status(status).json({
+    success: false,
+    message: err.message || 'Внутренняя ошибка сервера',
+  });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
