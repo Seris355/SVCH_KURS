@@ -67,6 +67,6 @@
 }
 
 .session-reminder-actions button:hover {
-  background: #00a861;
+  background: var(--color-accent-primary-hover);
   transform: translateY(-1px);
 }

@@ -67,7 +67,7 @@
 
 .our-team-error {
   text-align: center;
-  color: #c62828;
+  color: var(--color-accent-secondary);
 }
 
 .our-team-loading {

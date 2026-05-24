@@ -25,7 +25,7 @@
 }
 
 .review-form-error {
-  color: #c62828;
+  color: var(--color-accent-secondary);
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
 }
