@@ -29,9 +29,11 @@ const Header = () => {
     };
 
     loadUnread();
+    window.addEventListener('contact-unread-updated', loadUnread);
     const timer = window.setInterval(loadUnread, 30000);
     return () => {
       cancelled = true;
+      window.removeEventListener('contact-unread-updated', loadUnread);
       window.clearInterval(timer);
     };
   }, [isLoggedIn, user.role]);

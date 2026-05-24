@@ -52,6 +52,7 @@ const ContactRequests = () => {
       const res = await contactService.getThread(threadId);
       setSelectedChat(res.data || null);
       await loadThreads();
+      window.dispatchEvent(new Event('contact-unread-updated'));
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Ошибка при загрузке переписки');
     }
