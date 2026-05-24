@@ -27,18 +27,23 @@ function stripCorrectFlags(testInstance) {
   if (!plain.questions) {
     return plain;
   }
-  plain.questions = plain.questions.map((q) => ({
-    id: q.id,
-    testId: q.testId,
-    text: q.text,
-    orderIndex: q.orderIndex,
-    answers: (q.answers || []).map((a) => ({
-      id: a.id,
-      questionId: a.questionId,
-      text: a.text,
-      orderIndex: a.orderIndex,
-    })),
-  }));
+  plain.questions = plain.questions.map((q) => {
+    const answers = q.answers || [];
+    const correctCount = answers.filter((a) => a.isCorrect).length;
+    return {
+      id: q.id,
+      testId: q.testId,
+      text: q.text,
+      orderIndex: q.orderIndex,
+      allowMultiple: correctCount > 1,
+      answers: answers.map((a) => ({
+        id: a.id,
+        questionId: a.questionId,
+        text: a.text,
+        orderIndex: a.orderIndex,
+      })),
+    };
+  });
   return plain;
 }
 
@@ -253,7 +258,7 @@ exports.submitTest = async (req, res) => {
     if (!Array.isArray(submittedAnswers)) {
       return res.status(400).json({
         success: false,
-        message: 'Ожидается массив answers с парами questionId и answerId',
+        message: 'Ожидается массив answers с questionId и answerIds',
       });
     }
 
@@ -324,29 +329,56 @@ exports.submitTest = async (req, res) => {
       const row = submittedAnswers.find(
         (r) => parseInt(r.questionId, 10) === question.id
       );
-      if (row.answerId === undefined || row.answerId === null) {
-        return res.status(400).json({
-          success: false,
-          message: `Не указан answerId для вопроса ${question.id}`,
-        });
+
+      const correctIds = (question.answers || [])
+        .filter((a) => a.isCorrect)
+        .map((a) => a.id);
+      const allowMultiple = correctIds.length > 1;
+
+      let chosenIds = [];
+      if (Array.isArray(row?.answerIds)) {
+        chosenIds = row.answerIds.map((id) => parseInt(id, 10));
+      } else if (row?.answerId != null) {
+        chosenIds = [parseInt(row.answerId, 10)];
       }
-      const answerId = parseInt(row.answerId, 10);
-      if (Number.isNaN(answerId)) {
+
+      if (chosenIds.some((id) => Number.isNaN(id))) {
         return res.status(400).json({
           success: false,
           message: `Некорректный answerId для вопроса ${question.id}`,
         });
       }
-      const chosen = await Answer.findByPk(answerId);
 
-      if (!chosen || chosen.questionId !== question.id) {
+      if (allowMultiple) {
+        if (chosenIds.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Выберите хотя бы один ответ для вопроса ${question.id}`,
+          });
+        }
+      } else if (chosenIds.length !== 1) {
         return res.status(400).json({
           success: false,
-          message: `Некорректный ответ для вопроса ${question.id}`,
+          message: `Для вопроса ${question.id} нужно выбрать один ответ`,
         });
       }
 
-      if (chosen.isCorrect) {
+      for (const answerId of chosenIds) {
+        const chosen = await Answer.findByPk(answerId);
+        if (!chosen || chosen.questionId !== question.id) {
+          return res.status(400).json({
+            success: false,
+            message: `Некорректный ответ для вопроса ${question.id}`,
+          });
+        }
+      }
+
+      const chosenSet = new Set(chosenIds);
+      const isQuestionCorrect =
+        correctIds.length === chosenIds.length &&
+        correctIds.every((id) => chosenSet.has(id));
+
+      if (isQuestionCorrect) {
         correctCount += 1;
       }
     }

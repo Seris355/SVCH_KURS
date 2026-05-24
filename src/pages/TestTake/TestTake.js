@@ -8,9 +8,16 @@ import './testTake.css';
 const buildInitialSelections = (questions) => {
   const map = {};
   (questions || []).forEach((q) => {
-    map[q.id] = null;
+    map[q.id] = q.allowMultiple ? [] : null;
   });
   return map;
+};
+
+const isQuestionAnswered = (question, value) => {
+  if (question.allowMultiple) {
+    return Array.isArray(value) && value.length > 0;
+  }
+  return value != null;
 };
 
 const TestTake = () => {
@@ -54,8 +61,18 @@ const TestTake = () => {
     loadTest();
   }, [loadTest, testId]);
 
-  const handleSelect = (questionId, answerId) => {
+  const handleSingleSelect = (questionId, answerId) => {
     setSelections((prev) => ({ ...prev, [questionId]: answerId }));
+  };
+
+  const handleMultipleToggle = (questionId, answerId) => {
+    setSelections((prev) => {
+      const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
+      const next = current.includes(answerId)
+        ? current.filter((id) => id !== answerId)
+        : [...current, answerId];
+      return { ...prev, [questionId]: next };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -64,7 +81,7 @@ const TestTake = () => {
       return;
     }
 
-    const missing = test.questions.filter((q) => selections[q.id] == null);
+    const missing = test.questions.filter((q) => !isQuestionAnswered(q, selections[q.id]));
     if (missing.length > 0) {
       setError('Ответьте на все вопросы');
       return;
@@ -73,10 +90,15 @@ const TestTake = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const answers = test.questions.map((q) => ({
-        questionId: q.id,
-        answerId: selections[q.id],
-      }));
+      const answers = test.questions.map((q) => {
+        const value = selections[q.id];
+        const answerIds = q.allowMultiple
+          ? value
+          : value != null
+            ? [value]
+            : [];
+        return { questionId: q.id, answerIds };
+      });
       const response = await testService.submit(testId, answers);
       setSummary(response.data?.summary || null);
     } catch (err) {
@@ -125,24 +147,37 @@ const TestTake = () => {
             )}
 
             {!summary && (
-              <form onSubmit={handleSubmit}>
+              <form className="test-take-form" onSubmit={handleSubmit}>
                 {(test.questions || []).map((q, idx) => (
                   <fieldset key={q.id} className="test-take-block">
                     <legend className="test-take-q-title">
                       {idx + 1}. {q.text}
                     </legend>
-                    {(q.answers || []).map((a) => (
-                      <label key={a.id} className="test-take-option">
-                        <input
-                          type="radio"
-                          name={`question-${q.id}`}
-                          value={a.id}
-                          checked={selections[q.id] === a.id}
-                          onChange={() => handleSelect(q.id, a.id)}
-                        />
-                        <span>{a.text}</span>
-                      </label>
-                    ))}
+                    {q.allowMultiple && (
+                      <p className="test-take-hint">Можно выбрать несколько ответов</p>
+                    )}
+                    <div className="test-take-options">
+                      {(q.answers || []).map((a) => (
+                        <label key={a.id} className="test-take-option">
+                          <input
+                            type={q.allowMultiple ? 'checkbox' : 'radio'}
+                            name={`question-${q.id}`}
+                            value={a.id}
+                            checked={
+                              q.allowMultiple
+                                ? (selections[q.id] || []).includes(a.id)
+                                : selections[q.id] === a.id
+                            }
+                            onChange={() =>
+                              q.allowMultiple
+                                ? handleMultipleToggle(q.id, a.id)
+                                : handleSingleSelect(q.id, a.id)
+                            }
+                          />
+                          <span>{a.text}</span>
+                        </label>
+                      ))}
+                    </div>
                   </fieldset>
                 ))}
 
