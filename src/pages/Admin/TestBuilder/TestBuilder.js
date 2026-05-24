@@ -132,6 +132,38 @@ const TestBuilder = () => {
     }
   };
 
+  const handleUpdateQuestionText = async (questionId, text) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      window.alert('Текст вопроса не может быть пустым');
+      await loadDetail(selectedId);
+      return;
+    }
+    try {
+      await testService.updateQuestion(questionId, { text: trimmed });
+      await loadDetail(selectedId);
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Не удалось сохранить вопрос');
+      await loadDetail(selectedId);
+    }
+  };
+
+  const handleUpdateAnswerText = async (answerId, text) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      window.alert('Текст ответа не может быть пустым');
+      await loadDetail(selectedId);
+      return;
+    }
+    try {
+      await testService.updateAnswer(answerId, { text: trimmed });
+      await loadDetail(selectedId);
+    } catch (err) {
+      window.alert(err.response?.data?.message || 'Не удалось сохранить ответ');
+      await loadDetail(selectedId);
+    }
+  };
+
   const handleDeleteTest = async () => {
     if (!selectedId) return;
     if (!window.confirm('Удалить весь тест?')) return;
@@ -248,11 +280,33 @@ const TestBuilder = () => {
                             Удалить вопрос
                           </button>
                         </div>
-                        <p>{q.text}</p>
+                        <label className="tb-edit-label" htmlFor={`question-text-${q.id}`}>
+                          Текст вопроса
+                        </label>
+                        <textarea
+                          id={`question-text-${q.id}`}
+                          className="tb-edit-field"
+                          defaultValue={q.text}
+                          rows={2}
+                          onBlur={(e) => {
+                            if (e.target.value.trim() !== q.text) {
+                              handleUpdateQuestionText(q.id, e.target.value);
+                            }
+                          }}
+                        />
                         <ul className="tb-answers">
                           {(q.answers || []).map((a) => (
                             <li key={a.id} className="tb-answer-row">
-                              <span>{a.text}</span>
+                              <input
+                                className="tb-edit-field tb-edit-field-inline"
+                                defaultValue={a.text}
+                                aria-label="Текст ответа"
+                                onBlur={(e) => {
+                                  if (e.target.value.trim() !== a.text) {
+                                    handleUpdateAnswerText(a.id, e.target.value);
+                                  }
+                                }}
+                              />
                               <label className="tb-checkbox">
                                 <input
                                   type="checkbox"
