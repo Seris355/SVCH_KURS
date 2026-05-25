@@ -976,17 +976,19 @@ exports.getParticipantMasterClasses = async (req, res) => {
       }
     });
 
+    const now = new Date();
     const data = masterClasses.map((masterClass) => {
       const json = masterClass.toJSON();
       const enrolledPayment = paymentByMcId.get(json.id);
-      const enrolledSchedule = enrolledPayment?.schedule || null;
-      const now = new Date();
-      const enrolledScheduleIsPast = enrolledSchedule?.startDate
-        ? new Date(enrolledSchedule.startDate) <= now
+      const schedulePlain = enrolledPayment?.schedule?.toJSON
+        ? enrolledPayment.schedule.toJSON()
+        : enrolledPayment?.schedule || null;
+      const enrolledScheduleIsPast = schedulePlain?.startDate
+        ? new Date(schedulePlain.startDate) <= now
         : false;
 
-      const enrollmentManage = enrolledSchedule?.startDate
-        ? getEnrollmentModifyStatus(enrolledSchedule.startDate)
+      const enrollmentManage = schedulePlain?.startDate
+        ? getEnrollmentModifyStatus(schedulePlain.startDate)
         : {
             canModify: false,
             daysUntilSession: null,
@@ -995,8 +997,8 @@ exports.getParticipantMasterClasses = async (req, res) => {
 
       return {
         ...json,
-        enrolledSchedule: enrolledSchedule
-          ? { ...enrolledSchedule, isPast: enrolledScheduleIsPast }
+        enrolledSchedule: schedulePlain
+          ? { ...schedulePlain, isPast: enrolledScheduleIsPast }
           : null,
         enrolledPayment: enrolledPayment
           ? {

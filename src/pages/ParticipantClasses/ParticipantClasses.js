@@ -135,6 +135,12 @@ const ParticipantClasses = () => {
       setMyClasses(response.data || []);
     } catch (err) {
       console.error('Ошибка загрузки моих мастер-классов:', err);
+      setMyClasses([]);
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Ошибка при загрузке моих мастер-классов'
+      );
     }
   }, []);
 
