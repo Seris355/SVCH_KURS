@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setItemsPerPage } from '../../../store/slices/userSettingsSlice';
+import { usePersistedListPage } from '../../../hooks/usePersistedListPage';
 import { participantService } from '../../../services/participantService';
 import ParticipantForm from '../../../components/ParticipantForm/ParticipantForm';
 import ParticipantList from '../../../components/ParticipantList/ParticipantList';
@@ -16,6 +17,13 @@ const Participants = () => {
   const { itemsPerPage } = useAppSelector(
     (state) => state.userSettings
   );
+  const {
+    filters,
+    inputFilters,
+    currentPage,
+    update: updateListPage,
+    reset: resetListPage,
+  } = usePersistedListPage('adminParticipants');
 
   // ⬇️ ДАННЫЕ ИЗ БД - В ЛОКАЛЬНОМ СОСТОЯНИИ
   const [participants, setParticipants] = useState([]);
@@ -29,22 +37,10 @@ const Participants = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   
   // ⬇️ ПАГИНАЦИЯ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
-  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
-  
-  // ⬇️ ФИЛЬТРЫ - ЛОКАЛЬНОЕ СОСТОЯНИЕ
-  const [filters, setFilters] = useState({
-    search: '',
-    email: '',
-    phone: '',
-    sortBy: 'id',
-    sortOrder: 'ASC',
-  });
-  
-  const [inputFilters, setInputFilters] = useState(filters);
 
   // ⬇️ ЗАГРУЗКА ДАННЫХ НАПРЯМУЮ ЧЕРЕЗ СЕРВИС
   const loadParticipants = useCallback(async () => {
@@ -201,29 +197,24 @@ const Participants = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters(prev => ({ ...prev, [field]: value }));
+    updateListPage({
+      inputFilters: { ...inputFilters, [field]: value },
+    });
   };
 
   const handleSearch = () => {
-    setFilters(inputFilters);
-    setCurrentPage(1); // Сбрасываем на первую страницу
+    updateListPage({
+      filters: inputFilters,
+      currentPage: 1,
+    });
   };
 
   const handleResetFilters = () => {
-    const defaultFilters = {
-      search: '',
-      email: '',
-      phone: '',
-      sortBy: 'id',
-      sortOrder: 'ASC',
-    };
-    setInputFilters(defaultFilters);
-    setFilters(defaultFilters);
-    setCurrentPage(1);
+    resetListPage();
   };
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    updateListPage({ currentPage: newPage });
   };
 
   // ⬇️ ИЗМЕНЕНИЕ НАСТРОЕК (сохраняем в Redux)
@@ -231,7 +222,7 @@ const Participants = () => {
     const numValue = parseInt(value, 10);
     if (numValue > 0 && numValue <= 100) {
       dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1); // Сбрасываем на первую страницу
+      updateListPage({ currentPage: 1 });
     }
   };
 

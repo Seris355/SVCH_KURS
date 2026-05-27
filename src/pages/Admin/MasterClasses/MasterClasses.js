@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setItemsPerPage } from '../../../store/slices/userSettingsSlice';
+import { usePersistedListPage } from '../../../hooks/usePersistedListPage';
 import { masterClassService } from '../../../services/masterClassService';
 import MasterClassForm from '../../../components/MasterClassForm/MasterClassForm';
 import MasterClassList from '../../../components/MasterClassList/MasterClassList';
@@ -12,6 +13,13 @@ import './MasterClasses.css';
 const MasterClasses = () => {
   const dispatch = useAppDispatch();
   const { itemsPerPage } = useAppSelector((state) => state.userSettings);
+  const {
+    filters,
+    inputFilters,
+    currentPage,
+    update: updateListPage,
+    reset: resetListPage,
+  } = usePersistedListPage('adminMasterClasses');
 
   const [masterClasses, setMasterClasses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,20 +28,10 @@ const MasterClasses = () => {
   const [editingMasterClass, setEditingMasterClass] = useState(null);
   const [selectedMasterClass, setSelectedMasterClass] = useState(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
-
-  const [filters, setFilters] = useState({
-    search: '',
-    instructorId: '',
-    minPrice: '',
-    maxPrice: '',
-  });
-
-  const [inputFilters, setInputFilters] = useState(filters);
 
   const loadMasterClasses = useCallback(async () => {
     setLoading(true);
@@ -126,35 +124,31 @@ const MasterClasses = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters((prev) => ({ ...prev, [field]: value }));
+    updateListPage({
+      inputFilters: { ...inputFilters, [field]: value },
+    });
   };
 
   const handleSearch = () => {
-    setFilters(inputFilters);
-    setCurrentPage(1);
+    updateListPage({
+      filters: inputFilters,
+      currentPage: 1,
+    });
   };
 
   const handleResetFilters = () => {
-    const defaultFilters = {
-      search: '',
-      instructorId: '',
-      minPrice: '',
-      maxPrice: '',
-    };
-    setInputFilters(defaultFilters);
-    setFilters(defaultFilters);
-    setCurrentPage(1);
+    resetListPage();
   };
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    updateListPage({ currentPage: newPage });
   };
 
   const handleItemsPerPageChange = (value) => {
     const numValue = parseInt(value, 10);
     if (numValue > 0 && numValue <= 100) {
       dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1);
+      updateListPage({ currentPage: 1 });
     }
   };
 

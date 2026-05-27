@@ -16,6 +16,8 @@ import {
   isSessionPast,
 } from '../../utils/scheduleDates';
 import { useSessionReminders, REMINDER_DAYS_AHEAD } from '../../hooks/useSessionReminders';
+import { usePersistedListPage } from '../../hooks/usePersistedListPage';
+import { participantClassesFilterDefaults } from '../../store/slices/userSettingsSlice';
 import './ParticipantClasses.css';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -32,38 +34,33 @@ const formatSessionDateTime = (value) => {
   });
 };
 
-const defaultFilterState = {
-  search: '',
-  instructorIds: [],
-  minPrice: '',
-  maxPrice: '',
-  sortBy: 'price',
-  sortOrder: 'ASC',
-};
-
 const ParticipantClasses = () => {
   const [searchParams] = useSearchParams();
+  const {
+    filters,
+    inputFilters,
+    activeTab,
+    catalogLimit,
+    currentPage,
+    update: updateListPage,
+    reset: resetListPage,
+  } = usePersistedListPage('participantClasses');
+
   const [masterClasses, setMasterClasses] = useState([]);
   const [myClasses, setMyClasses] = useState([]);
   const [instructors, setInstructors] = useState([]);
-  const [catalogLimit, setCatalogLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedMasterClass, setSelectedMasterClass] = useState(null);
-  const [activeTab, setActiveTab] = useState('all');
 
   const [enrollDialog, setEnrollDialog] = useState(null);
   const [rescheduleDialog, setRescheduleDialog] = useState(null);
   const [myPayments, setMyPayments] = useState([]);
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
-
-  const [filters, setFilters] = useState(defaultFilterState);
-  const [inputFilters, setInputFilters] = useState(defaultFilterState);
 
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
 
@@ -80,14 +77,16 @@ const ParticipantClasses = () => {
     if (Number.isNaN(instructorId)) return;
 
     const nextFilters = {
-      ...defaultFilterState,
+      ...participantClassesFilterDefaults,
       instructorIds: [instructorId],
     };
-    setActiveTab('all');
-    setInputFilters(nextFilters);
-    setFilters(nextFilters);
-    setCurrentPage(1);
-  }, [searchParams]);
+    updateListPage({
+      activeTab: 'all',
+      inputFilters: nextFilters,
+      filters: nextFilters,
+      currentPage: 1,
+    });
+  }, [searchParams, updateListPage]);
 
   const loadMasterClasses = useCallback(async () => {
     setLoading(true);
@@ -410,7 +409,9 @@ const ParticipantClasses = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters((prev) => ({ ...prev, [field]: value }));
+    updateListPage({
+      inputFilters: { ...inputFilters, [field]: value },
+    });
   };
 
   const handleInstructorToggle = (instructorId) => {
@@ -435,18 +436,29 @@ const ParticipantClasses = () => {
   };
 
   const handleSearch = () => {
-    setFilters(inputFilters);
-    setCurrentPage(1);
+    updateListPage({
+      filters: inputFilters,
+      currentPage: 1,
+    });
   };
 
   const handleResetFilters = () => {
-    setInputFilters(defaultFilterState);
-    setFilters(defaultFilterState);
-    setCurrentPage(1);
+    resetListPage();
   };
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    updateListPage({ currentPage: newPage });
+  };
+
+  const handleTabChange = (tab) => {
+    updateListPage({ activeTab: tab });
+  };
+
+  const handleCatalogLimitChange = (value) => {
+    updateListPage({
+      catalogLimit: parseInt(value, 10),
+      currentPage: 1,
+    });
   };
 
   const handleExportPdf = async () => {
@@ -595,21 +607,21 @@ const ParticipantClasses = () => {
           <div className="tabs">
             <button
               className={activeTab === 'all' ? 'tab active' : 'tab'}
-              onClick={() => setActiveTab('all')}
+              onClick={() => handleTabChange('all')}
               type="button"
             >
               Все мастер-классы
             </button>
             <button
               className={activeTab === 'my' ? 'tab active' : 'tab'}
-              onClick={() => setActiveTab('my')}
+              onClick={() => handleTabChange('my')}
               type="button"
             >
               Мои мастер-классы ({myClasses.length})
             </button>
             <button
               className={activeTab === 'payments' ? 'tab active' : 'tab'}
-              onClick={() => setActiveTab('payments')}
+              onClick={() => handleTabChange('payments')}
               type="button"
             >
               Мои счета ({myPayments.length})
@@ -717,10 +729,7 @@ const ParticipantClasses = () => {
                 <label>Элементов на странице:</label>
                 <select
                   value={catalogLimit}
-                  onChange={(e) => {
-                    setCatalogLimit(parseInt(e.target.value, 10));
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => handleCatalogLimitChange(e.target.value)}
                 >
                   {PAGE_SIZE_OPTIONS.map((n) => (
                     <option key={n} value={n}>

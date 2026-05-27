@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setItemsPerPage } from '../../../store/slices/userSettingsSlice';
+import { usePersistedListPage } from '../../../hooks/usePersistedListPage';
 import { instructorService } from '../../../services/instructorService';
 import InstructorForm from '../../../components/InstructorForm/InstructorForm';
 import InstructorList from '../../../components/InstructorList/InstructorList';
@@ -11,6 +12,13 @@ import './Instructors.css';
 const Instructors = () => {
   const dispatch = useAppDispatch();
   const { itemsPerPage } = useAppSelector((state) => state.userSettings);
+  const {
+    filters,
+    inputFilters,
+    currentPage,
+    update: updateListPage,
+    reset: resetListPage,
+  } = usePersistedListPage('adminInstructors');
 
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,18 +26,10 @@ const Instructors = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 0,
   });
-
-  const [filters, setFilters] = useState({
-    search: '',
-    specialization: '',
-  });
-
-  const [inputFilters, setInputFilters] = useState(filters);
 
   const loadInstructors = useCallback(async () => {
     setLoading(true);
@@ -106,33 +106,31 @@ const Instructors = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setInputFilters((prev) => ({ ...prev, [field]: value }));
+    updateListPage({
+      inputFilters: { ...inputFilters, [field]: value },
+    });
   };
 
   const handleSearch = () => {
-    setFilters(inputFilters);
-    setCurrentPage(1);
+    updateListPage({
+      filters: inputFilters,
+      currentPage: 1,
+    });
   };
 
   const handleResetFilters = () => {
-    const defaultFilters = {
-      search: '',
-      specialization: '',
-    };
-    setInputFilters(defaultFilters);
-    setFilters(defaultFilters);
-    setCurrentPage(1);
+    resetListPage();
   };
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    updateListPage({ currentPage: newPage });
   };
 
   const handleItemsPerPageChange = (value) => {
     const numValue = parseInt(value, 10);
     if (numValue > 0 && numValue <= 100) {
       dispatch(setItemsPerPage(numValue));
-      setCurrentPage(1);
+      updateListPage({ currentPage: 1 });
     }
   };
 
