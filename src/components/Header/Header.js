@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { authUtils } from '../../utils/auth';
 import { contactService } from '../../services/contactService';
+import ResetUserSettingsButton from '../ResetUserSettingsButton/ResetUserSettingsButton';
 import './header_and_footer_styles.css';
 
 const Header = () => {
@@ -93,9 +94,12 @@ const Header = () => {
           </>
         )}
         {isLoggedIn && (
-          <button type="button" onClick={handleLogout} className={linkClass}>
-            Выйти
-          </button>
+          <>
+            <ResetUserSettingsButton className={mobile ? 'reset-user-settings-btn--mobile' : ''} />
+            <button type="button" onClick={handleLogout} className={linkClass}>
+              Выйти
+            </button>
+          </>
         )}
       </>
     );
