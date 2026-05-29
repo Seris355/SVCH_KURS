@@ -340,7 +340,13 @@
 
 @media (max-width: 320px) {
   .partners { padding: 0 var(--spacing-sm); gap: 0.5rem; }
-  h1 { line-height: 1.1; padding: var(--spacing-md); font-size: 40px; }
+  h1,
+  .H1_scroll h1,
+  .hero-title {
+    line-height: 1.1;
+    padding: var(--spacing-sm);
+    font-size: 1.75rem;
+  }
   .gallery-image { height: 120px; }
   .slider-image { height: 200px; }
 }
