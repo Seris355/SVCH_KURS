@@ -1,13 +1,23 @@
+const path = require('path');
 const { Client } = require('pg');
-require('dotenv').config();
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`В server/.env не задана переменная ${name}`);
+  }
+  return value;
+}
 
 async function createDatabase() {
-  const dbName = process.env.DB_NAME;
+  const dbName = requireEnv('DB_NAME');
   const client = new Client({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    host: requireEnv('DB_HOST'),
+    port: Number(requireEnv('DB_PORT')),
+    user: requireEnv('DB_USER'),
+    password: requireEnv('DB_PASSWORD'),
     database: 'postgres',
   });
 
@@ -21,11 +31,14 @@ async function createDatabase() {
   if (exists.rowCount) {
     console.log(`База "${dbName}" уже существует.`);
   } else {
-    await client.query(`CREATE DATABASE "${dbName}"`);
+    await client.query(`CREATE DATABASE "${dbName}" ENCODING 'UTF8'`);
     console.log(`База "${dbName}" создана.`);
   }
 
   await client.end();
+  console.log(
+    'Дальше: npm run init-db (таблицы) или npm run seed-db (таблицы + тестовые данные).'
+  );
 }
 
 createDatabase().catch((error) => {
