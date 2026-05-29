@@ -34,6 +34,9 @@ const formatSessionDateTime = (value) => {
   });
 };
 
+const getApiErrorMessage = (err, fallback) =>
+  err?.response?.data?.message || err?.message || fallback;
+
 const ParticipantClasses = () => {
   const [searchParams] = useSearchParams();
   const {
@@ -54,7 +57,11 @@ const ParticipantClasses = () => {
   const [selectedMasterClass, setSelectedMasterClass] = useState(null);
 
   const [enrollDialog, setEnrollDialog] = useState(null);
+  const [enrollDialogError, setEnrollDialogError] = useState(null);
   const [rescheduleDialog, setRescheduleDialog] = useState(null);
+  const [rescheduleDialogError, setRescheduleDialogError] = useState(null);
+  const [cancelDialog, setCancelDialog] = useState(null);
+  const [pageNotice, setPageNotice] = useState(null);
   const [myPayments, setMyPayments] = useState([]);
 
   const [pagination, setPagination] = useState({
@@ -64,10 +71,18 @@ const ParticipantClasses = () => {
 
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
 
-  const closeEnrollDialog = useCallback(() => setEnrollDialog(null), []);
+  const closeEnrollDialog = useCallback(() => {
+    setEnrollDialog(null);
+    setEnrollDialogError(null);
+  }, []);
   const enrollOverlayDismiss = useOverlayDismiss(closeEnrollDialog);
-  const closeRescheduleDialog = useCallback(() => setRescheduleDialog(null), []);
+  const closeRescheduleDialog = useCallback(() => {
+    setRescheduleDialog(null);
+    setRescheduleDialogError(null);
+  }, []);
   const rescheduleOverlayDismiss = useOverlayDismiss(closeRescheduleDialog);
+  const closeCancelDialog = useCallback(() => setCancelDialog(null), []);
+  const cancelOverlayDismiss = useOverlayDismiss(closeCancelDialog);
   const { allItems: reminderItems, reloadReminders } = useSessionReminders({
     enabled: authUtils.isLoggedIn() && authUtils.getUser()?.role === 'participant',
   });
@@ -189,16 +204,21 @@ const ParticipantClasses = () => {
   }, [activeTab, loadPayments, loadMyClasses]);
 
   useEffect(() => {
-    if (!enrollDialog && !rescheduleDialog) return undefined;
+    if (!enrollDialog && !rescheduleDialog && !cancelDialog) return undefined;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        setEnrollDialog(null);
-        setRescheduleDialog(null);
+        closeEnrollDialog();
+        closeRescheduleDialog();
+        closeCancelDialog();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enrollDialog, rescheduleDialog]);
+  }, [enrollDialog, rescheduleDialog, cancelDialog, closeEnrollDialog, closeRescheduleDialog, closeCancelDialog]);
+
+  const showPageNotice = (text, type = 'success') => {
+    setPageNotice({ text, type });
+  };
 
   const reloadEnrollmentData = async () => {
     await loadMasterClasses();
@@ -210,57 +230,59 @@ const ParticipantClasses = () => {
   const handleConfirmEnroll = async () => {
     if (!enrollDialog) return;
     const { masterClass, selectedScheduleId } = enrollDialog;
+    setEnrollDialogError(null);
     try {
       setLoading(true);
       const response = await masterClassService.enroll(masterClass.id, {
         scheduleId: selectedScheduleId,
       });
-      setEnrollDialog(null);
+      closeEnrollDialog();
       await reloadEnrollmentData();
       await loadFavoriteIds();
       if (response.payment) {
-        window.alert(
-          `Запись оформлена.\nКод счёта: ${response.payment.invoiceCode}\nСумма к оплате: ${parseFloat(response.payment.amount).toFixed(2)}`
+        showPageNotice(
+          `Запись оформлена. Код счёта: ${response.payment.invoiceCode}. Сумма к оплате: ${parseFloat(response.payment.amount).toFixed(2)} Br`,
+          'success'
         );
       } else {
-        window.alert('Вы записаны.');
+        showPageNotice('Вы записаны на выбранный сеанс.', 'success');
       }
     } catch (err) {
-      window.alert(
-        err.response?.data?.message || 'Ошибка при записи на мастер-класс'
+      setEnrollDialogError(
+        getApiErrorMessage(err, 'Ошибка при записи на мастер-класс')
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancelEnrollment = async (masterClass) => {
+  const handleCancelEnrollment = (masterClass) => {
     const enrollment = getEnrollmentInfo(masterClass);
     const manage = enrollment.manage;
     if (enrollment.schedule && manage && !manage.canModify) {
-      window.alert(
+      showPageNotice(
         manage.modifyBlockedReason ||
-          `Отмена доступна не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до сеанса`
+          `Отмена доступна не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до сеанса`,
+        'error'
       );
       return;
     }
+    setCancelDialog({
+      masterClass,
+      sessionLabel: formatSessionDateTime(enrollment.schedule?.startDate),
+    });
+  };
 
-    const sessionLabel = formatSessionDateTime(enrollment.schedule?.startDate);
-    if (
-      !window.confirm(
-        `Отписаться от «${masterClass.name}»?\nСеанс: ${sessionLabel}\n\nЭто действие нельзя отменить.`
-      )
-    ) {
-      return;
-    }
-
+  const handleConfirmCancel = async () => {
+    if (!cancelDialog) return;
     try {
       setLoading(true);
-      await masterClassService.cancelEnrollment(masterClass.id);
+      await masterClassService.cancelEnrollment(cancelDialog.masterClass.id);
+      closeCancelDialog();
       await reloadEnrollmentData();
-      window.alert('Вы отписались от мастер-класса.');
+      showPageNotice('Вы отписались от мастер-класса.', 'success');
     } catch (err) {
-      window.alert(err.response?.data?.message || 'Не удалось отписаться');
+      showPageNotice(getApiErrorMessage(err, 'Не удалось отписаться'), 'error');
     } finally {
       setLoading(false);
     }
@@ -269,10 +291,20 @@ const ParticipantClasses = () => {
   const openRescheduleDialog = async (masterClass) => {
     const enrollment = getEnrollmentInfo(masterClass);
     const manage = enrollment.manage;
+    setRescheduleDialogError(null);
     if (manage && !manage.canModify) {
-      window.alert(
+      showPageNotice(
         manage.modifyBlockedReason ||
-          `Смена даты доступна не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до сеанса`
+          `Смена даты доступна не позднее чем за ${MIN_DAYS_BEFORE_MODIFY} дней до сеанса`,
+        'error'
+      );
+      return;
+    }
+
+    if (!getEnrolledScheduleId(masterClass.id)) {
+      showPageNotice(
+        'Активная запись не найдена. Сначала выберите дату сеанса.',
+        'error'
       );
       return;
     }
@@ -289,7 +321,10 @@ const ParticipantClasses = () => {
       });
 
       if (!schedules.length) {
-        window.alert('Нет других доступных сеансов для переноса.');
+        showPageNotice(
+          'Нет других доступных сеансов для переноса. Можно оставить текущую дату или отписаться от мастер-класса.',
+          'error'
+        );
         return;
       }
 
@@ -300,8 +335,8 @@ const ParticipantClasses = () => {
         currentScheduleId,
         currentSchedule: enrollment.schedule,
       });
-    } catch {
-      window.alert('Не удалось загрузить расписание');
+    } catch (err) {
+      showPageNotice(getApiErrorMessage(err, 'Не удалось загрузить расписание'), 'error');
     } finally {
       setLoading(false);
     }
@@ -310,12 +345,13 @@ const ParticipantClasses = () => {
   const handleConfirmReschedule = async () => {
     if (!rescheduleDialog) return;
     const { masterClass, selectedScheduleId, currentScheduleId } = rescheduleDialog;
+    setRescheduleDialogError(null);
 
     if (
       currentScheduleId != null &&
       Number(selectedScheduleId) === Number(currentScheduleId)
     ) {
-      setRescheduleDialog(null);
+      closeRescheduleDialog();
       return;
     }
 
@@ -324,29 +360,39 @@ const ParticipantClasses = () => {
       const result = await masterClassService.rescheduleEnrollment(masterClass.id, {
         scheduleId: selectedScheduleId,
       });
-      setRescheduleDialog(null);
+      closeRescheduleDialog();
       await reloadEnrollmentData();
       if (!result.data?.unchanged) {
-        window.alert('Дата сеанса успешно изменена.');
+        showPageNotice('Дата сеанса успешно изменена.', 'success');
       }
     } catch (err) {
-      window.alert(err.response?.data?.message || 'Не удалось изменить дату сеанса');
+      setRescheduleDialogError(
+        getApiErrorMessage(err, 'Не удалось изменить дату сеанса')
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const openEnrollDialog = async (masterClass) => {
+    setEnrollDialogError(null);
     try {
       setLoading(true);
       const response = await masterClassService.getById(masterClass.id);
       const full = response.data;
-      const schedules = getBookableSchedules(full.schedules || [], full.id);
+      const activeScheduleId = getEnrolledScheduleId(full.id);
+      if (activeScheduleId) {
+        showPageNotice(
+          'Вы уже записаны на сеанс. Для смены даты откройте вкладку «Мои мастер-классы» и нажмите «Изменить дату».',
+          'error'
+        );
+        return;
+      }
+      const schedules = filterBookableSchedules(full.schedules || []);
       if (!schedules.length) {
-        window.alert(
-          isEnrolled(full.id)
-            ? 'Вы уже записаны на сеанс этого мастер-класса.'
-            : 'Для этого мастер-класса сейчас нет доступных сеансов. Обратитесь к администратору.'
+        showPageNotice(
+          'Для этого мастер-класса сейчас нет доступных сеансов. Обратитесь к администратору.',
+          'error'
         );
         return;
       }
@@ -355,8 +401,8 @@ const ParticipantClasses = () => {
         schedules,
         selectedScheduleId: schedules[0].id,
       });
-    } catch {
-      window.alert('Не удалось загрузить расписание');
+    } catch (err) {
+      showPageNotice(getApiErrorMessage(err, 'Не удалось загрузить расписание'), 'error');
     } finally {
       setLoading(false);
     }
@@ -377,8 +423,9 @@ const ParticipantClasses = () => {
         setFavoriteIds((prev) => new Set(prev).add(id));
       }
     } catch (err) {
-      window.alert(
-        err.response?.data?.message || 'Ошибка при работе с избранным'
+      showPageNotice(
+        getApiErrorMessage(err, 'Ошибка при работе с избранным'),
+        'error'
       );
     }
   };
@@ -397,8 +444,11 @@ const ParticipantClasses = () => {
       setLoading(true);
       const response = await masterClassService.getById(masterClass.id);
       setSelectedMasterClass(response.data);
-    } catch {
-      alert('Ошибка при загрузке детальной информации');
+    } catch (err) {
+      showPageNotice(
+        getApiErrorMessage(err, 'Ошибка при загрузке детальной информации'),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -427,9 +477,12 @@ const ParticipantClasses = () => {
       setLoading(true);
       await paymentService.markPaid(paymentId);
       await loadPayments();
-      window.alert('Счёт отмечен как оплаченный.');
+      showPageNotice('Счёт отмечен как оплаченный.', 'success');
     } catch (err) {
-      window.alert(err.response?.data?.message || err.message || 'Не удалось оплатить счёт');
+      showPageNotice(
+        getApiErrorMessage(err, 'Не удалось оплатить счёт'),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -465,7 +518,7 @@ const ParticipantClasses = () => {
     try {
       await masterClassService.exportMyClassesPdf();
     } catch (err) {
-      window.alert(err.response?.data?.message || 'Не удалось скачать PDF');
+      showPageNotice(getApiErrorMessage(err, 'Не удалось скачать PDF'), 'error');
     }
   };
 
@@ -548,13 +601,7 @@ const ParticipantClasses = () => {
     return payment?.scheduleId || payment?.schedule?.id || null;
   };
 
-  const isEnrolled = (classId) =>
-    myClasses.some((mc) => mc.id === classId) || Boolean(getEnrolledScheduleId(classId));
-
-  const getBookableSchedules = (schedules, classId) =>
-    filterBookableSchedules(schedules, {
-      excludeScheduleId: getEnrolledScheduleId(classId),
-    });
+  const hasActiveEnrollment = (classId) => Boolean(getEnrolledScheduleId(classId));
 
   const formatScheduleOption = (schedule) => {
     const dateLabel = new Date(schedule.startDate).toLocaleString('ru-RU');
@@ -603,6 +650,27 @@ const ParticipantClasses = () => {
           </div>
 
           {error && <div className="error-message">{error}</div>}
+
+          {pageNotice && (
+            <div
+              className={
+                pageNotice.type === 'error'
+                  ? 'participant-page-notice participant-page-notice--error'
+                  : 'participant-page-notice participant-page-notice--success'
+              }
+              role="alert"
+            >
+              <span>{pageNotice.text}</span>
+              <button
+                type="button"
+                className="participant-page-notice-close"
+                aria-label="Закрыть"
+                onClick={() => setPageNotice(null)}
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           <div className="tabs">
             <button
@@ -1026,12 +1094,14 @@ const ParticipantClasses = () => {
                               <button
                                 type="button"
                                 className={
-                                  isEnrolled(masterClass.id) ? 'btn-enrolled' : 'btn-enroll'
+                                  hasActiveEnrollment(masterClass.id)
+                                    ? 'btn-enrolled'
+                                    : 'btn-enroll'
                                 }
                                 onClick={() => openEnrollDialog(masterClass)}
-                                disabled={isEnrolled(masterClass.id)}
+                                disabled={hasActiveEnrollment(masterClass.id)}
                               >
-                                {isEnrolled(masterClass.id)
+                                {hasActiveEnrollment(masterClass.id)
                                   ? fmtEnrolledLabel(masterClass.id)
                                   : 'Выбрать дату и записаться'}
                               </button>
@@ -1074,7 +1144,7 @@ const ParticipantClasses = () => {
               masterClass={selectedMasterClass}
               onClose={handleCloseDetail}
               reviewFormSlot={
-                isEnrolled(selectedMasterClass.id) && !hasReviewForSelected ? (
+                hasActiveEnrollment(selectedMasterClass.id) && !hasReviewForSelected ? (
                   <ReviewForm
                     masterClassId={selectedMasterClass.id}
                     onSuccess={async () => {
@@ -1086,7 +1156,7 @@ const ParticipantClasses = () => {
                 ) : null
               }
               noteBelowReviews={
-                isEnrolled(selectedMasterClass.id) && hasReviewForSelected ? (
+                hasActiveEnrollment(selectedMasterClass.id) && hasReviewForSelected ? (
                   <p className="review-note">Вы уже оставили отзыв на этот мастер-класс.</p>
                 ) : null
               }
@@ -1130,11 +1200,16 @@ const ParticipantClasses = () => {
                     </option>
                   ))}
                 </select>
+                {enrollDialogError && (
+                  <p className="enroll-modal-error" role="alert">
+                    {enrollDialogError}
+                  </p>
+                )}
                 <div className="enroll-modal-actions">
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => setEnrollDialog(null)}
+                    onClick={closeEnrollDialog}
                   >
                     Отмена
                   </button>
@@ -1195,11 +1270,16 @@ const ParticipantClasses = () => {
                     </option>
                   ))}
                 </select>
+                {rescheduleDialogError && (
+                  <p className="enroll-modal-error" role="alert">
+                    {rescheduleDialogError}
+                  </p>
+                )}
                 <div className="enroll-modal-actions">
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => setRescheduleDialog(null)}
+                    onClick={closeRescheduleDialog}
                   >
                     Отмена
                   </button>
@@ -1210,6 +1290,49 @@ const ParticipantClasses = () => {
                     disabled={loading}
                   >
                     {loading ? '…' : 'Сохранить новую дату'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {cancelDialog && (
+            <div
+              className="enroll-modal-overlay"
+              role="presentation"
+              {...cancelOverlayDismiss}
+            >
+              <div
+                className="enroll-modal-box"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cancel-enrollment-title"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 id="cancel-enrollment-title" className="enroll-modal-title">
+                  Отписаться от мастер-класса?
+                </h2>
+                <p>{cancelDialog.masterClass.name}</p>
+                <p className="enroll-modal-hint">
+                  Сеанс: {cancelDialog.sessionLabel}
+                </p>
+                <p className="enroll-modal-hint">Это действие нельзя отменить.</p>
+                <div className="enroll-modal-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={closeCancelDialog}
+                    disabled={loading}
+                  >
+                    Нет, оставить запись
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-cancel-enrollment"
+                    onClick={handleConfirmCancel}
+                    disabled={loading}
+                  >
+                    {loading ? '…' : 'Да, отписаться'}
                   </button>
                 </div>
               </div>
