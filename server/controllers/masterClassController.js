@@ -634,9 +634,20 @@ exports.enrollParticipant = async (req, res) => {
         return res.status(400).json({
           success: false,
           message:
-            'Вы уже записаны на другой сеанс этого мастер-класса. Для смены даты обратитесь к администратору.',
+            'Вы уже записаны на другой сеанс этого мастер-класса. Используйте кнопку «Изменить дату» в разделе «Мои мастер-классы».',
         });
       }
+    }
+
+    const staleCancelled = await Payment.findOne({
+      where: {
+        participantId,
+        scheduleId: sid,
+        status: 'cancelled',
+      },
+    });
+    if (staleCancelled) {
+      await staleCancelled.destroy();
     }
 
     const enrolledCount = await countActiveEnrollment(sid);
