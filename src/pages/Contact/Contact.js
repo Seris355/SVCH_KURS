@@ -138,16 +138,18 @@ const Contact = () => {
           </div>
 
           <div className="flex_container_for_main">
-            <div className="map-container">
-              <iframe
-                title="Карта"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2350.448509139887!2d27.5615!3d53.9045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dbcfd25b1c23a1%3A0x400a089f2a490c0!2z0JzQuNC90YHQutC40Lkg0L%2BQvNC10YLRgdC60LDRjyDQv9GA0L7QstC10YDRgtC40Y8!5e0!3m2!1sru!2sby!4v1234567890"
-                className="map-iframe"
-                style={{ border: 0 }}
-                allowFullScreen=""
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+            <div className="contact-map-row">
+              <div className="map-container">
+                <iframe
+                  title="Карта"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2350.448509139887!2d27.5615!3d53.9045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dbcfd25b1c23a1%3A0x400a089f2a490c0!2z0JzQuNC90YHQutC40Lkg0L%2BQvNC10YLRgdC60LDRjyDQv9GA0L7QstC10YDRgtC40Y8!5e0!3m2!1sru!2sby!4v1234567890"
+                  className="map-iframe"
+                  style={{ border: 0 }}
+                  allowFullScreen=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </div>
             <div className="flex">
               <div className="contact_info">
