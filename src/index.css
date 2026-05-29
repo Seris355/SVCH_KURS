@@ -364,3 +364,11 @@ textarea {
 .animate-slide-in { animation: slideIn var(--transition-normal); }
 .animate-slide-up { animation: slideUp var(--transition-normal); }
 .animate-helix-reveal { animation: helixReveal 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+@media (max-width: 320px) {
+  h1 {
+    font-size: 1.75rem;
+    line-height: 1.15;
+    word-break: break-word;
+  }
+}
