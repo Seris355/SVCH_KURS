@@ -6,9 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "create-db": "node scripts/createDB.js",
     "init-db": "node scripts/initDB.js",
     "reset-db": "node scripts/resetDB.js",
-    "seed-db": "node scripts/seedDB.js"
+    "seed-db": "node scripts/seedDB.js",
+    "setup-db": "node scripts/createDB.js && node scripts/seedDB.js"
   },
   "dependencies": {
     "@fontsource/noto-sans": "^5.2.10",
