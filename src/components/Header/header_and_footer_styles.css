@@ -333,6 +333,36 @@ button.header-mobile-link {
     left: var(--spacing-xs);
     right: var(--spacing-xs);
   }
+
+  footer .f_list {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-xs);
+  }
+
+  footer .footer_phone_flex_error {
+    width: 100%;
+    align-items: center;
+  }
+
+  footer .footer_phone_flex_error p {
+    white-space: nowrap;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  footer .footer_inst img {
+    width: 36px;
+    height: auto;
+  }
+
+  footer .footer_copy {
+    font-size: 12px;
+    padding: var(--spacing-sm) var(--spacing-xs);
+    line-height: 1.4;
+  }
 }
 
 footer {
