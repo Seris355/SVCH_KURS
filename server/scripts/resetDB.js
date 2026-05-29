@@ -1,23 +1,18 @@
-const { sequelize, Instructor, Participant, MasterClass, ParticipantPassword, RefreshToken } = require('../models');
+const { sequelize } = require('../models');
 
 async function resetDatabase() {
   try {
-    
     await sequelize.authenticate();
-    console.log('✓ Подключение к базе данных установлено.');
+    console.log('Подключение к базе данных установлено.');
 
-    
-    
     await sequelize.sync({ force: true });
-    console.log('✓ База данных полностью пересоздана.');
+    console.log('База данных полностью пересоздана (все таблицы пустые).');
 
-    console.log('✓ База данных успешно сброшена!');
     process.exit(0);
   } catch (error) {
-    console.error('✗ Ошибка при сбросе базы данных:', error);
+    console.error('Ошибка при сбросе базы данных:', error);
     process.exit(1);
   }
 }
 
 resetDatabase();
-
