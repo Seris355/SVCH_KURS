@@ -11,10 +11,24 @@ router.get(
 );
 
 router.get(
+  '/schedules/:scheduleId/participants/pdf',
+  verifyToken,
+  requireAdmin,
+  adminReportsController.exportScheduleParticipantsPdf
+);
+
+router.get(
   '/payments/period',
   verifyToken,
   requireAdmin,
   adminReportsController.paymentsFinanceReport
+);
+
+router.get(
+  '/payments/period/pdf',
+  verifyToken,
+  requireAdmin,
+  adminReportsController.exportPaymentsFinancePdf
 );
 
 module.exports = router;

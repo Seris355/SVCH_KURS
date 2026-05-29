@@ -60,6 +60,8 @@ const AdminReports = () => {
   const [financePayload, setFinancePayload] = useState(null);
   const [loadingFinance, setLoadingFinance] = useState(false);
   const [financeError, setFinanceError] = useState(null);
+  const [exportingSessionPdf, setExportingSessionPdf] = useState(false);
+  const [exportingFinancePdf, setExportingFinancePdf] = useState(false);
 
   const loadSchedules = useCallback(async () => {
     setLoadingLists(true);
@@ -159,6 +161,38 @@ const AdminReports = () => {
     setFinancePage(1);
   };
 
+  const handleExportSessionPdf = async () => {
+    if (!selectedId) return;
+    setExportingSessionPdf(true);
+    setError(null);
+    try {
+      await reportService.exportScheduleParticipantsPdf(selectedId);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || 'Ошибка экспорта PDF'
+      );
+    } finally {
+      setExportingSessionPdf(false);
+    }
+  };
+
+  const handleExportFinancePdf = async () => {
+    setExportingFinancePdf(true);
+    setFinanceError(null);
+    try {
+      await reportService.exportPaymentsPeriodPdf({
+        dateFrom: financeAppliedFrom,
+        dateTo: financeAppliedTo,
+      });
+    } catch (err) {
+      setFinanceError(
+        err.response?.data?.message || err.message || 'Ошибка экспорта PDF'
+      );
+    } finally {
+      setExportingFinancePdf(false);
+    }
+  };
+
   const sch = reportPayload?.schedule;
 
   const financePag = financePayload?.pagination;
@@ -210,6 +244,17 @@ const AdminReports = () => {
           <section style={{ marginTop: '36px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
             <div className="contact-requests-header" style={{ paddingTop: 0 }}>
               <h2 style={{ margin: 0 }}>Отчёт по участникам сеанса</h2>
+              {selectedId && reportPayload ? (
+                <button
+                  type="button"
+                  className="contact-requests-input"
+                  style={{ cursor: 'pointer', minHeight: '40px' }}
+                  onClick={handleExportSessionPdf}
+                  disabled={exportingSessionPdf}
+                >
+                  {exportingSessionPdf ? 'Экспорт…' : 'Скачать PDF'}
+                </button>
+              ) : null}
             </div>
 
           {!loadingReport && selectedId && reportPayload && sch ? (
@@ -260,6 +305,17 @@ const AdminReports = () => {
           <section style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
             <div className="contact-requests-header" style={{ paddingTop: 0 }}>
               <h2 style={{ margin: 0 }}>Финансовый отчёт (счета за период)</h2>
+              {financePayload ? (
+                <button
+                  type="button"
+                  className="contact-requests-input"
+                  style={{ cursor: 'pointer', minHeight: '40px' }}
+                  onClick={handleExportFinancePdf}
+                  disabled={exportingFinancePdf}
+                >
+                  {exportingFinancePdf ? 'Экспорт…' : 'Скачать PDF'}
+                </button>
+              ) : null}
             </div>
 
             {financeError && (
