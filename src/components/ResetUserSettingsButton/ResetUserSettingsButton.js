@@ -1,9 +1,8 @@
 import React from 'react';
 import { useAppDispatch } from '../../store/hooks';
 import { resetAllUserSettings } from '../../store/slices/userSettingsSlice';
-import './ResetUserSettingsButton.css';
 
-const ResetUserSettingsButton = ({ className = '' }) => {
+const ResetUserSettingsButton = ({ className = 'hn_link', onAfterReset }) => {
   const dispatch = useAppDispatch();
 
   const handleReset = () => {
@@ -15,14 +14,15 @@ const ResetUserSettingsButton = ({ className = '' }) => {
       return;
     }
     dispatch(resetAllUserSettings());
+    if (onAfterReset) onAfterReset();
   };
 
   return (
     <button
       type="button"
-      className={`reset-user-settings-btn ${className}`.trim()}
+      className={className}
       onClick={handleReset}
-      title="Очистить localStorage и сбросить фильтры"
+      title="Сбросить фильтры, сортировку и настройки списков"
     >
       Сбросить настройки
     </button>

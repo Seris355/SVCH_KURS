@@ -95,7 +95,7 @@ const Header = () => {
         )}
         {isLoggedIn && (
           <>
-            <ResetUserSettingsButton className={mobile ? 'reset-user-settings-btn--mobile' : ''} />
+            <ResetUserSettingsButton className={linkClass} onAfterReset={closeMenu} />
             <button type="button" onClick={handleLogout} className={linkClass}>
               Выйти
             </button>
