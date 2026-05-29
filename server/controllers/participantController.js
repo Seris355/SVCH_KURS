@@ -1,8 +1,13 @@
 const bcrypt = require('bcrypt');
-const PDFDocument = require('pdfkit');
 const { Participant, ParticipantPassword } = require('../models');
 const { Op, Sequelize } = require('sequelize');
-const { resolveUnicodeTtfPath } = require('../utils/pdfFonts');
+const {
+  beginPdfResponse,
+  writeReportHeader,
+  writeSectionTitle,
+  writeSimpleTable,
+  formatRuDateTime,
+} = require('../utils/pdfReportBuilder');
 
 exports.exportParticipantsPdf = async (req, res) => {
   try {
@@ -35,38 +40,50 @@ exports.exportParticipantsPdf = async (req, res) => {
       order: [['id', 'ASC']],
     });
 
-    const doc = new PDFDocument({ margin: 50 });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="uchastniki.pdf"'
-    );
-    doc.pipe(res);
+    const generatedAt = new Date().toLocaleString('ru-RU', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    });
+    const filterParts = [];
+    if (search) filterParts.push(`поиск: «${search}»`);
+    if (email) filterParts.push(`e-mail: «${email}»`);
+    if (phone) filterParts.push(`телефон: «${phone}»`);
 
-    const fontPath = resolveUnicodeTtfPath();
-    if (fontPath) {
-      doc.font(fontPath);
-    }
+    const doc = beginPdfResponse(res, 'uchastniki.pdf');
 
-    doc.fontSize(14).text('Список участников', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(9);
+    writeReportHeader(doc, {
+      title: 'Список участников',
+      subtitle: 'Реестр зарегистрированных пользователей',
+      meta: [
+        `Дата формирования: ${generatedAt}`,
+        filterParts.length
+          ? `Фильтры: ${filterParts.join('; ')}`
+          : 'Фильтры: не заданы',
+        `Всего записей: ${rows.length}`,
+      ],
+    });
+
+    writeSectionTitle(doc, 'Табличная часть: участники');
 
     if (rows.length === 0) {
-      doc.text('Нет записей по выбранным фильтрам.');
+      doc.fontSize(9).text('Нет записей по выбранным фильтрам.');
       doc.end();
       return;
     }
 
-    rows.forEach((p, i) => {
-      const reg =
-        p.createdAt != null
-          ? new Date(p.createdAt).toLocaleString('ru-RU')
-          : '—';
-      doc.text(
-        `${i + 1}. ${p.fullName} | ${p.email} | ${p.phone} | регистрация: ${reg}`
-      );
-      doc.moveDown(0.35);
+    writeSimpleTable(doc, {
+      headers: ['№', 'ФИО', 'E-mail', 'Телефон', 'Регистрация'],
+      rows: rows.map((participant, index) => [
+        String(index + 1),
+        participant.fullName || '—',
+        participant.email || '—',
+        participant.phone || '—',
+        participant.createdAt
+          ? formatRuDateTime(participant.createdAt)
+          : '—',
+      ]),
+      colWidths: [28, 120, 130, 90, 90],
+      footerRow: ['', `Итого: ${rows.length}`, '', '', ''],
     });
 
     doc.end();

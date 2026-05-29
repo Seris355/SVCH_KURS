@@ -1,7 +1,15 @@
-const PDFDocument = require('pdfkit');
 const { MasterClass, Instructor, Participant, Schedule, Location, Payment, Review } = require('../models');
 const { Op, Sequelize } = require('sequelize');
-const { resolveUnicodeTtfPath } = require('../utils/pdfFonts');
+const {
+  beginPdfResponse,
+  writeReportHeader,
+  writeSectionTitle,
+  writeKeyValueBlock,
+  writeSimpleTable,
+  formatRuDateTime,
+  formatMoney,
+  paymentStatusRu,
+} = require('../utils/pdfReportBuilder');
 const {
   assertCanModifyEnrollment,
   getEnrollmentModifyStatus,
@@ -1029,6 +1037,9 @@ exports.getParticipantMasterClasses = async (req, res) => {
 exports.exportMyClassesPdf = async (req, res) => {
   try {
     const participantId = req.user.id;
+    const participant = await Participant.findByPk(participantId, {
+      attributes: ['id', 'fullName', 'email'],
+    });
 
     const masterClasses = await MasterClass.findAll({
       where: {
@@ -1047,55 +1058,110 @@ exports.exportMyClassesPdf = async (req, res) => {
     });
 
     const mcIds = masterClasses.map((m) => m.id);
-    const schedules = mcIds.length
-      ? await Schedule.findAll({
-          where: { masterClassId: { [Op.in]: mcIds } },
-          order: [['startDate', 'ASC']],
+    const payments = mcIds.length
+      ? await Payment.findAll({
+          where: {
+            participantId,
+            status: { [Op.in]: ['pending', 'paid'] },
+          },
+          include: [
+            {
+              model: Schedule,
+              as: 'schedule',
+              where: { masterClassId: { [Op.in]: mcIds } },
+              attributes: ['id', 'masterClassId', 'startDate', 'endDate'],
+              include: [
+                {
+                  model: Location,
+                  as: 'location',
+                  attributes: ['name'],
+                },
+              ],
+            },
+          ],
         })
       : [];
 
-    const firstDateByMc = {};
-    schedules.forEach((s) => {
-      if (firstDateByMc[s.masterClassId] == null) {
-        firstDateByMc[s.masterClassId] = s.startDate;
+    const paymentByMcId = new Map();
+    payments.forEach((payment) => {
+      const mcId = payment.schedule?.masterClassId;
+      if (mcId != null && !paymentByMcId.has(mcId)) {
+        paymentByMcId.set(mcId, payment);
       }
     });
 
-    const doc = new PDFDocument({ margin: 50 });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="moi-master-klassy.pdf"'
+    const generatedAt = new Date().toLocaleString('ru-RU', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    });
+    const totalAmount = payments.reduce(
+      (acc, row) => acc + (parseFloat(row.amount) || 0),
+      0
     );
-    doc.pipe(res);
+    const paidCount = payments.filter((row) => row.status === 'paid').length;
+    const pendingCount = payments.filter((row) => row.status === 'pending').length;
 
-    const fontPath = resolveUnicodeTtfPath();
-    if (fontPath) {
-      doc.font(fontPath);
-    }
+    const doc = beginPdfResponse(res, 'moi-master-klassy.pdf');
 
-    doc.fontSize(16).text('Мои мастер-классы', { align: 'center' });
-    doc.moveDown();
+    writeReportHeader(doc, {
+      title: 'Мои мастер-классы',
+      subtitle: participant?.fullName || 'Участник',
+      meta: [
+        `Дата формирования: ${generatedAt}`,
+        participant?.email ? `E-mail: ${participant.email}` : null,
+        `Всего записей: ${masterClasses.length}`,
+      ].filter(Boolean),
+    });
+
+    writeSectionTitle(doc, 'Сводка');
+    writeKeyValueBlock(doc, [
+      ['Мастер-классов', String(masterClasses.length)],
+      ['Оплачено', String(paidCount)],
+      ['Ожидает оплаты', String(pendingCount)],
+      ['Общая сумма счетов', formatMoney(totalAmount)],
+    ]);
+
+    writeSectionTitle(doc, 'Табличная часть: записи');
 
     if (masterClasses.length === 0) {
-      doc.fontSize(11).text('Нет записей.');
+      doc.fontSize(9).text('Нет записей на мастер-классы.');
       doc.end();
       return;
     }
 
-    doc.fontSize(10);
-    masterClasses.forEach((mc, i) => {
-      const dateStr = firstDateByMc[mc.id]
-        ? new Date(firstDateByMc[mc.id]).toLocaleString('ru-RU')
-        : '—';
-      doc.text(
-        `${i + 1}. ${mc.name}`,
-        { continued: false }
-      );
-      doc.text(
-        `   Инструктор: ${mc.instructor?.fullName || '—'} | Дата (ближайший сеанс): ${dateStr} | Цена: ${parseFloat(mc.price).toFixed(2)} ₽`
-      );
-      doc.moveDown(0.5);
+    writeSimpleTable(doc, {
+      headers: [
+        '№',
+        'Мастер-класс',
+        'Инструктор',
+        'Сеанс',
+        'Площадка',
+        'Статус',
+        'Сумма',
+      ],
+      rows: masterClasses.map((mc, index) => {
+        const payment = paymentByMcId.get(mc.id);
+        const schedule = payment?.schedule;
+        return [
+          String(index + 1),
+          mc.name,
+          mc.instructor?.fullName || '—',
+          schedule?.startDate ? formatRuDateTime(schedule.startDate) : '—',
+          schedule?.location?.name || '—',
+          payment ? paymentStatusRu(payment.status) : '—',
+          payment ? formatMoney(payment.amount) : formatMoney(mc.price),
+        ];
+      }),
+      colWidths: [24, 95, 75, 85, 70, 70, 55],
+      footerRow: [
+        '',
+        `Итого: ${masterClasses.length}`,
+        '',
+        '',
+        '',
+        '',
+        formatMoney(totalAmount),
+      ],
     });
 
     doc.end();
