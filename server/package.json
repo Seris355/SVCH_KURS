@@ -1,6 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
+  "license": "MIT",
   "description": "Backend server for MasterClass application",
   "main": "server.js",
   "scripts": {
